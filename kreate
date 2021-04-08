@@ -1,0 +1,28 @@
+#!/bin/bash
+
+APP=$1
+command=${2-default}
+declare -A KREATE_PIPE=()
+
+if [[ -f  ./kreate_profile ]] ;then
+  source ./kreate_profile
+elif [[ -f  ~/.kreate/profile ]] ;then
+  source ~/.kreate/profile
+elif [[ -f  /etc/kreate/profile ]] ;then
+  source /etc/kreate/profile
+fi
+
+for f in \
+    "$KREATE_BASE_DIR/$APP/kreate.sh" \
+    "./$APP/kreate.sh"
+do
+    if [[ -x $f ]]; then
+        # recreate the base files, should not change anything
+        echo $f
+        $f
+    fi
+done
+
+pipe=${KREATE_PIPE[$command]}
+echo $command == $pipe
+$KREATE_COMMAND $APP | $pipe
