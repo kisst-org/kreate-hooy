@@ -1,8 +1,55 @@
 #!/bin/bash
 
-APP=$1
-command=${2-default}
+# Argument Parsing copied from http://mywiki.wooledge.org/BashFAQ/035
+
+die() {
+    printf '%s\n' "$1" >&2
+    exit 1
+}
+
+# Initialize all the option variables.
+# This ensures we are not contaminated by variables from the environment.
+file=
+verbose=0
+
+while :; do
+    case $1 in
+        -h|help|--help)
+            SHOW_HELP=true
+            break
+            ;;
+        -f|--file)       # Takes an option argument; ensure it has been specified.
+            if [ "$2" ]; then
+                file=$2
+                shift
+            else
+                die 'ERROR: "--file" requires a non-empty option argument.'
+            fi
+            ;;
+        --file=?*)
+            file=${1#*=} # Delete everything up to "=" and assign the remainder.
+            ;;
+        --file=)         # Handle the case of an empty --file=
+            die 'ERROR: "--file" requires a non-empty option argument.'
+            ;;
+        -v|--verbose)
+            verbose=$((verbose + 1))  # Each -v adds 1 to verbosity.
+            ;;
+        --)              # End of all options.
+            shift
+            break
+            ;;
+        -?*)
+            printf 'WARN: Unknown option (ignored): %s\n' "$1" >&2
+            ;;
+        *)               # Default case: No more options, so break out of the loop.
+            break
+    esac
+    shift
+done
+
 declare -A KREATE_PIPE=()
+declare -A KREATE_HELP=()
 
 if [[ -f  ./kreate_profile ]] ;then
   source ./kreate_profile
@@ -11,6 +58,32 @@ elif [[ -f  ~/.kreate/profile ]] ;then
 elif [[ -f  /etc/kreate/profile ]] ;then
   source /etc/kreate/profile
 fi
+
+# Usage info
+if [[ SHOW_HELP==true ]] ; then
+cat << EOF
+Usage: ${0##*/} [options] APP [command]
+kreate files for APP and apply symbolic command as pipe
+
+    -h|--help  display this help and exit
+    -f|--file OUTFILE
+               write the result to OUTFILE instead of standard output.
+    -v         verbose mode. Can be used multiple times for increased
+               verbosity.
+    command can be any one of:
+EOF
+    for i in "${!KREATE_PIPE[@]}" ; do
+        HELP="${KREATE_HELP[$i]}"
+        if [[ -z "$HELP" ]]; then HELP="${KREATE_PIPE[$i]}"; fi
+        printf "%12s: %s\n" $i "$HELP"
+    done
+    exit
+fi
+
+
+APP=$1
+command=${2-default}
+
 
 for f in \
     "$KREATE_BASE_DIR/$APP/kreate.sh" \
