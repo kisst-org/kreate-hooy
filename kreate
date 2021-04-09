@@ -1,6 +1,5 @@
 #!/bin/bash
 
-export SILENT
 run=false
 apply=false
 
@@ -10,18 +9,13 @@ show_help() {
 cat << EOF
 Usage: ${0##*/} [options] <dir> ...
 
-The purpose of kreate is to create kostomize files
-based on some generation scripts called kreate.sh
-and then execute kustomize
-
+The purpose of kreate is calling kreate.sh to create kustomize files
+and then execute kustomize, and possibly use kubectl apply
     -h|--help|help     display this help and exit
     -v|--verbose       verbose mode.
     -n|--no-files      do not kreate files
-    -f|--files|files   kreate files (default behaviour)
-    -r|--run|run       run 'kustomize build' (default behaviour)
+    -r|--run|run       run 'kustomize build'
     -a|--apply|apply   run 'kustomize build | kubectl apply -f -'
-    -c|--context <ctx> use .kube/config context <ctx> for apply
-    --context=<ctx>    use .kube/config context <ctx> for apply
 EOF
 }
 
@@ -37,26 +31,11 @@ while :; do
         -n|--no-files)
             export KREATE_NO_FILES=true
             ;;
-        -f|--files|files)
-            export KREATE=true
-            ;;
         -r|--run|run)
             run=true
             ;;
         -a|--apply|apply)
             apply=true
-            ;;
-        --context=?*)
-            context=${1#*=} # Delete everything up to "=" and assign the remainder.
-            ;;
-        -c|--context)
-            if [ "$2" ]; then
-                context=$2
-                shift
-            else
-                echo 'ERROR: "--context" requires a non-empty option argument.'
-                exit 1
-            fi
             ;;
         --)              # End of all options.
             shift
@@ -71,10 +50,17 @@ while :; do
     shift
 done
 
-KREATE_APPLY_PIPE="kubectl apply -f -"
+kreate_apply() {
+    $SILENT || echo kustomize build $1 \| kubectl apply -f -
+    echo fake
+}
+kreate_run() {
+    $SILENT || echo kustomize build $1
+    echo fake
+}
 
-if [[ -f  ./kreate_profile ]] ;then
-  source ./kreate_profile
+if [[ -f  ./.kreate_profile ]] ;then
+  source ./.kreate_profile
 elif [[ -f  ~/.kreate/profile ]] ;then
   source ~/.kreate/profile
 elif [[ -f  /etc/kreate/profile ]] ;then
@@ -84,23 +70,14 @@ fi
 for f in $*
 do
     if [[ -x $f/kreate.sh ]]; then
-        export SILENT
-        export KREATE_NO_FILES
         $SILENT || echo Starting $f/kreate.sh
         $f/kreate.sh
     else
         $SILENT && echo Skipping $f
     fi
     if $apply ; then
-        if [[ -z context ]]; then
-            CONTEXT=""
-        else
-            CONTEXT="--context $context"
-        fi
-        $SILENT || echo kustomize build $f \| $KREATE_APPLY_PIPE $CONTEXT
-        kustomize build $f | $KREATE_APPLY_PIPE $CONTEXT
+        kreate_apply $f
     elif $run; then
-        $SILENT || echo running kustomize build $f
-        kustomize build $f
+        kreate_run $f
     fi
 done
