@@ -3,7 +3,6 @@
 run=false
 apply=false
 
-
 # Usage info
 show_help() {
 cat << EOF
@@ -50,13 +49,16 @@ while :; do
     shift
 done
 
+
+
+
 kreate_apply() {
     $SILENT || echo kustomize build $1 \| kubectl apply -f -
-    echo fake
+    kustomize build $1 | kubectl apply -f -
 }
 kreate_run() {
     $SILENT || echo kustomize build $1
-    echo fake
+    kustomize build $1
 }
 
 if [[ -f  ./.kreate_profile ]] ;then
@@ -73,7 +75,7 @@ do
         $SILENT || echo Starting $f/kreate.sh
         $f/kreate.sh
     else
-        $SILENT && echo Skipping $f
+        $SILENT && echo Skipping $f/kreate.sh
     fi
     if $apply ; then
         kreate_apply $f
