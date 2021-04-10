@@ -1,0 +1,120 @@
+#!/bin/bash
+
+export KREATE_COMMIT_MESSAGE="files created/updated by kreate scripts"
+show_help() {
+    cat << EOF
+Usage: ${0##*/} [options] <command> <dir>...
+
+The purpose of kreate is calling kreate.sh to create files
+and then optionally execute a command like git or kustomize
+Options can be:
+    -h|--help      display this help and exit
+    -v|--verbose   verbose mode.
+    -i|--init-file use another init file
+    -n|--no-files  do not kreate files
+Command can be:
+    help     display this help text and exit
+    files    only kreate files, no further action
+    status   kreate files, do git status
+    diff     kreate files, do git diff
+    commit   kreate files, do git commit with commit message
+             $KREATE_COMMIT_MESSAGE
+    build    kreate files, do kustomize build
+    apply    kreate files, do kustomize build | kubectl apply -f -
+$KREATE_EXTRA_HELP_TEXT
+Note: It is possible to only use the first letter(s) of a command,
+as they are all unique.
+EOF
+}
+
+init_files=()
+command=help
+while [ ! $# -eq 0 ]; do
+    case $1 in
+        -h|help|--help)
+            command=help
+            break
+            ;;
+        -v|--verbose)
+            export SILENT=false
+            ;;
+        -n|--no-files)
+            export KREATE_NO_FILES=true
+            ;;
+        -i|--init)
+            init_files+=("$2")
+            shift
+            ;;
+        -?*)
+            actions+=("$1")
+            ;;
+        *)               # Default case: No more options, so break out of the loop.
+            command=$1
+            break
+    esac
+    shift
+done
+
+declare -A commands=()
+commands[help]=show_help
+commands[files]=kreate_files
+commands[status]=kreate_git_status
+commands[commit]=kreate_git_commit
+commands[diff]=kreate_git_diff
+commands[apply]=kustomize_apply
+commands[build]=kustomize_build
+
+
+init_files+=($KREATE_INIT_FILE)
+init_files+=(./.kreate_profile)
+init_files+=(~/.kreate_profile)
+init_files+=(/etc/kreate_profile)
+for f in "${init_files[@]}"; do
+    if [[ -f  $f ]] ;then
+        $SILENT || echo loading init file $f
+        source $f
+    else
+        $SILENT || echo skipping init file $f
+    fi
+done
+
+kreate_files() { $SILENT || echo creating files; }
+kreate_git_status() { git status $1; }
+kreate_git_diff() { git diff $1; }
+kreate_git_commit() { git commit $1 -m "$KREATE_COMMIT_MESSAGE"; }
+export -f kreate_git_commit
+export -f kreate_git_status
+export -f kreate_git_diff
+
+kustomize_apply() {
+    $SILENT || echo kustomize build $1 \| kubectl apply -f -
+    kustomize build $1 | kubectl apply -f -
+}
+kustomize_build() {
+    $SILENT || echo kustomize build $1
+    kustomize build $1
+}
+
+for f in "${!commands[@]}"; do
+    if [[ "$f" == "$command"* ]]; then
+        command=$f
+        KREATE_COMMAND=${commands[$command]}
+        $SILENT || echo kreate $command
+    fi
+done
+if [[ "$command" == "help" ]]; then
+    show_help
+    exit 0
+fi
+
+
+for f in $*
+do
+    if [[ -x $f/kreate.sh ]]; then
+        $SILENT || echo Starting $f/kreate.sh
+        $f/kreate.sh
+        $KREATE_COMMAND $f
+    else
+        $SILENT && echo Skipping $f/kreate.sh
+    fi
+done
