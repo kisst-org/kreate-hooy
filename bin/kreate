@@ -12,7 +12,6 @@ Options can be:
     -v|--verbose   verbose mode.
     -s|--silent    silent mode.
     -i|--init-file use another init file
-    -n|--no-files  do not kreate files
 Command can be:
     help     display this help text and exit
     files    only kreate files, no further action
@@ -43,9 +42,6 @@ while [ ! $# -eq 0 ]; do
         -s|--silent)
             export VERBOSE=false
             export INFO=false
-            ;;
-        -n|--no-files)
-            export KREATE_NO_FILES=true
             ;;
         -i|--init)
             init_files+=("$2")
@@ -106,7 +102,7 @@ for f in "${!commands[@]}"; do
     if [[ "$f" == "$command"* ]]; then
         command=$f
         KREATE_COMMAND=${commands[$command]}
-        $SILENT || echo kreate $command
+        ${INFO-true} && echo kreate $command
     fi
 done
 if [[ "$command" == "help" ]]; then
@@ -118,10 +114,10 @@ fi
 for f in $*
 do
     if [[ -x $f/kreate.sh ]]; then
-        $SILENT || echo Starting $f/kreate.sh
+        ${INFO-true} && echo Starting $f/kreate.sh
         $f/kreate.sh
         $KREATE_COMMAND $f
     else
-        $SILENT && echo Skipping $f/kreate.sh
+        ${INFO-true} && echo Not available $f/kreate.sh
     fi
 done
