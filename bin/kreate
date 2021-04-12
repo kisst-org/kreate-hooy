@@ -28,7 +28,7 @@ EOF
 }
 
 init_files=()
-command=help
+command=files
 while [ ! $# -eq 0 ]; do
     case $1 in
         -h|help|--help)
@@ -50,7 +50,15 @@ while [ ! $# -eq 0 ]; do
         -?*)
             actions+=("$1")
             ;;
-        *)               # Default case: No more options, so break out of the loop.
+        */*)  # file or directory name with a period /
+            command=files
+            break
+            ;;
+        *.*)  # file or directory name with a period .
+            command=files
+            break
+            ;;
+        *)  # Default case: No more options, so break out of the loop.
             command=$1
             shift
             break
@@ -98,11 +106,14 @@ kustomize_build() {
     kustomize build $1
 }
 
+EXTRA_FILES=""
+if [ $# -eq 0 ]; then EXTRA_FILES="."; fi
+
 for f in "${!commands[@]}"; do
     if [[ "$f" == "$command"* ]]; then
         command=$f
         KREATE_COMMAND=${commands[$command]}
-        ${INFO-true} && echo kreate $command
+        ${INFO-true} && echo kreate $command $* $EXTRA_FILES
     fi
 done
 if [[ "$command" == "help" ]]; then
@@ -111,7 +122,7 @@ if [[ "$command" == "help" ]]; then
 fi
 
 
-for f in $*
+for f in $* $EXTRA_FILES
 do
     if [[ -x $f/kreate.sh ]]; then
         ${INFO-true} && echo Starting $f/kreate.sh
