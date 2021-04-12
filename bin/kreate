@@ -10,6 +10,7 @@ and then optionally execute a command like git or kustomize
 Options can be:
     -h|--help      display this help and exit
     -v|--verbose   verbose mode.
+    -s|--silent    silent mode.
     -i|--init-file use another init file
     -n|--no-files  do not kreate files
 Command can be:
@@ -36,7 +37,12 @@ while [ ! $# -eq 0 ]; do
             break
             ;;
         -v|--verbose)
-            export SILENT=false
+            export VERBOSE=true
+            export INFO=true
+            ;;
+        -s|--silent)
+            export VERBOSE=false
+            export INFO=false
             ;;
         -n|--no-files)
             export KREATE_NO_FILES=true
@@ -50,6 +56,7 @@ while [ ! $# -eq 0 ]; do
             ;;
         *)               # Default case: No more options, so break out of the loop.
             command=$1
+            shift
             break
     esac
     shift
@@ -71,14 +78,14 @@ init_files+=(~/.kreate_profile)
 init_files+=(/etc/kreate_profile)
 for f in "${init_files[@]}"; do
     if [[ -f  $f ]] ;then
-        $SILENT || echo loading init file $f
+        ${INFO-true} && echo loading init file $f
         source $f
     else
-        $SILENT || echo skipping init file $f
+        ${VERBOSE-false} && echo skipping init file $f
     fi
 done
 
-kreate_files() { $SILENT || echo creating files; }
+kreate_files() { ${VERBOSE-false} && echo created files, no more actions; }
 kreate_git_status() { git status $1; }
 kreate_git_diff() { git diff $1; }
 kreate_git_commit() { git commit $1 -m "$KREATE_COMMIT_MESSAGE"; }
@@ -87,11 +94,11 @@ export -f kreate_git_status
 export -f kreate_git_diff
 
 kustomize_apply() {
-    $SILENT || echo kustomize build $1 \| kubectl apply -f -
+    ${INFO-true} && echo kustomize build $1 \| kubectl apply -f -
     kustomize build $1 | kubectl apply -f -
 }
 kustomize_build() {
-    $SILENT || echo kustomize build $1
+    ${INFO-true} && echo kustomize build $1
     kustomize build $1
 }
 
