@@ -10,6 +10,7 @@ function error() { echo 1>&2 $*; exit 1; }
 function nope() { verbose files created; }
 export -f info
 export -f verbose
+export -f debug
 export -f error
 
 #####################################################################
@@ -27,7 +28,7 @@ Options can be:
     -q|--quiet     quiet mode.
     -i|--init-file use another init file
 Only one of the following commands/options should be specified:
-    -s|--status   kreate temporary files, do: diff -q per file
+    -s|--status   kreate temporary files, show if files are +/new or M/modified
     -d|--diff     kreate temporary files, do: diff per file
     -k|--kust     kreate files, do: kustomize build
     -a|--apply    kreate files, do: kustomize build | kubectl apply -f -
@@ -47,7 +48,7 @@ kreate_file() {
 kreate_tmp_file() {
     ORIG_FILE=$FILE
     FILE=tmp.kreated.$FILE
-    verbose kreating tmp file $FILE
+    debug kreating tmp file $FILE
 }
 kreate_diff() {
     if [[ -f $ORIG_FILE ]]; then
@@ -61,7 +62,7 @@ kreate_diff() {
 }
 kreate_status() {
     if [[ -f $ORIG_FILE ]]; then
-        verbose status $ORIG_FILE
+        verbose status $(pwd)/$ORIG_FILE
         if diff -q $ORIG_FILE $FILE >/dev/null; then
             info . $ORIG_FILE
         else
