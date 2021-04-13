@@ -1,7 +1,18 @@
 #!/bin/bash
 
+#####################################################################
+# helper functions
+
+function info()  { ${INFO-true} && echo $*; }
+function verbose() { ${VERBOSE-false} && echo $*; }
+export -f info
+export -f verbose
+
+#####################################################################
+# commands
+
 export KREATE_COMMIT_MESSAGE="files created/updated by kreate scripts"
-show_help() {
+kreate_help_command() {
     cat << EOF
 Usage: ${0##*/} [options] <command> <dir>...
 
@@ -12,11 +23,12 @@ Options can be:
     -v|--verbose   verbose mode.
     -s|--silent    silent mode.
     -i|--init-file use another init file
+    -m|--message   optional commit message for commit command
 Command can be:
     help     display this help text and exit
     files    only kreate files, no further action
-    status   kreate files, do git status
-    diff     kreate files, do git diff
+    status   kreate temporary files, do diff -q per file
+    diff     kreate temporary files, do diff per file
     commit   kreate files, do git commit with commit message
              $KREATE_COMMIT_MESSAGE
     build    kreate files, do kustomize build
@@ -27,7 +39,80 @@ as they are all unique.
 EOF
 }
 
-init_files=()
+kreate_files_command() { ${VERBOSE-false} && echo created files, no more actions; }
+kreate_status_command() { git status $1; }
+kreate_diff_command() { git diff $1; }
+kreate_commit_command() { git commit $1 -m "$KREATE_COMMIT_MESSAGE"; }
+kreate_build_command() {
+    ${INFO-true} && echo kustomize build $1
+    kustomize build $1
+}
+kreate_apply_command() {
+    ${INFO-true} && echo kustomize build $1 \| kubectl apply -f -
+    kustomize build $1 | kubectl apply -f -
+}
+
+declare -A commands=()
+commands[help]=kreate_help_command
+commands[files]=kreate_files_command
+commands[diff]=kreate_diff_command
+commands[status]=kreate_status_command
+commands[commit]=kreate_commit_command
+commands[apply]=kreate_apply_command
+commands[build]=kreate_build_command
+
+#####################################################################
+# functions to be used in kreate.sh scripts
+
+kreate_file() {
+    info kreating $(pwd)/$FILE
+    #echo $(pwd)/$FILE >>$KREATED_FILES
+ }
+kreate_tmp_file() {
+    ORIG_FILE=$FILE
+    FILE=tmp.kreated.$FILE
+    verbose kreating tmp file $FILE
+}
+kreate_diff() {
+    if [[ -f $ORIG_FILE ]]; then
+        info diff $ORIG_FILE
+        diff $ORIG_FILE $FILE
+    else
+        info no original file $ORIG_FILE
+    fi
+    rm $FILE
+    FILE=$ORIG_FILE
+}
+kreate_status() {
+    if [[ -f $ORIG_FILE ]]; then
+        info diff -q $ORIG_FILE
+        diff -q $ORIG_FILE $FILE
+    else
+        info no original file $ORIG_FILE
+    fi
+    rm $FILE
+    FILE=$ORIG_FILE
+}
+export -f kreate_file
+export -f kreate_tmp_file
+export -f kreate_diff
+export -f kreate_status
+
+export KREATE_FILE="kreate_file"
+#export KREATE_TMP_DIR=`mktemp -d --tmpdir tmp.kreate.XXXXXX`
+#export KREATED_FILES=$KREATE_TMP_DIR/kreated.files
+
+#####################################################################
+# initialisation
+kreate_init() {
+    if [[ -f  $1 ]] ;then
+        info loading init file $1
+        source $1
+    else
+        verbose skipping init file $1
+    fi
+}
+
 command=files
 while [ ! $# -eq 0 ]; do
     case $1 in
@@ -39,12 +124,24 @@ while [ ! $# -eq 0 ]; do
             export VERBOSE=true
             export INFO=true
             ;;
-        -s|--silent)
+        -q|--quiet)
             export VERBOSE=false
             export INFO=false
             ;;
+        -s|--status)
+            export KREATE_FILE=kreate_tmp_file
+            export KREATE_DONE=kreate_status
+            ;;
+        -d|--diff|--dry-run)
+            export KREATE_FILE=kreate_tmp_file
+            export KREATE_DONE=kreate_diff
+            ;;
         -i|--init)
             init_files+=("$2")
+            shift
+            ;;
+        -m|--message)
+            KREATE_COMMIT_MESSAGE="$2"
             shift
             ;;
         -?*)
@@ -66,45 +163,11 @@ while [ ! $# -eq 0 ]; do
     shift
 done
 
-declare -A commands=()
-commands[help]=show_help
-commands[files]=kreate_files
-commands[status]=kreate_git_status
-commands[commit]=kreate_git_commit
-commands[diff]=kreate_git_diff
-commands[apply]=kustomize_apply
-commands[build]=kustomize_build
+kreate_init $KREATE_INIT_FILE
+kreate_init ./.kreate_profile
+kreate_init ~/.kreate_profile
+kreate_init /etc/kreate_profile
 
-
-init_files+=($KREATE_INIT_FILE)
-init_files+=(./.kreate_profile)
-init_files+=(~/.kreate_profile)
-init_files+=(/etc/kreate_profile)
-for f in "${init_files[@]}"; do
-    if [[ -f  $f ]] ;then
-        ${INFO-true} && echo loading init file $f
-        source $f
-    else
-        ${VERBOSE-false} && echo skipping init file $f
-    fi
-done
-
-kreate_files() { ${VERBOSE-false} && echo created files, no more actions; }
-kreate_git_status() { git status $1; }
-kreate_git_diff() { git diff $1; }
-kreate_git_commit() { git commit $1 -m "$KREATE_COMMIT_MESSAGE"; }
-export -f kreate_git_commit
-export -f kreate_git_status
-export -f kreate_git_diff
-
-kustomize_apply() {
-    ${INFO-true} && echo kustomize build $1 \| kubectl apply -f -
-    kustomize build $1 | kubectl apply -f -
-}
-kustomize_build() {
-    ${INFO-true} && echo kustomize build $1
-    kustomize build $1
-}
 
 EXTRA_FILES=""
 if [ $# -eq 0 ]; then EXTRA_FILES="."; fi
@@ -113,7 +176,7 @@ for f in "${!commands[@]}"; do
     if [[ "$f" == "$command"* ]]; then
         command=$f
         KREATE_COMMAND=${commands[$command]}
-        ${INFO-true} && echo kreate $command $* $EXTRA_FILES
+        ${INFO-true} && echo kreate $command "$@" $EXTRA_FILES
     fi
 done
 if [[ "$command" == "help" ]]; then
@@ -122,7 +185,7 @@ if [[ "$command" == "help" ]]; then
 fi
 
 
-for f in $* $EXTRA_FILES
+for f in "$@" $EXTRA_FILES
 do
     if [[ -x $f/kreate.sh ]]; then
         ${INFO-true} && echo Starting $f/kreate.sh
@@ -132,3 +195,7 @@ do
         ${INFO-true} && echo Not available $f/kreate.sh
     fi
 done
+#for f in `cat $KREATED_FILES`; do echo $f; done
+#if [[ "$KREATE_TMP_DIR" == "/tmp/"* ]]; then
+#    rm $KREATE_TMP_DIR
+#fi
