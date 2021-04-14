@@ -42,7 +42,11 @@ EOF
 # functions to be used in kreate.sh scripts
 
 kreate_file() {
-    info kreating $(pwd)/$FILE
+    if [[ "$FILE" == "/"* ]]; then
+        info kreating $FILE
+    else
+        info kreating $(pwd)/$FILE
+    fi
     #echo $(pwd)/$FILE >>$KREATED_FILES
  }
 kreate_tmp_file() {
