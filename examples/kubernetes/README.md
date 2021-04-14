@@ -112,8 +112,15 @@ You can also see if any files changed by using the `--status` option (shorthand 
 + app1-deployment.yaml
 + app1-service.yaml
 + app1-ingress.yaml
+
+~/kreate/examples/kubernetes$ git status .
+On branch main
+Your branch is up to date with 'origin/main'.
+
+nothing to commit, working tree clean
 ````
 - In the first example the files were generated for the second time, so nothing is changed, which is indicated by a period .
 - In the second example the files were removed first, so the files would be added, which is indicated by a plus sign +
+- Note that the files are not really created: `--diff` and `--status` only show what would happen.
 
 
