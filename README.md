@@ -1,4 +1,4 @@
-# kreate - creating files with simple templates and no tools
+# kreate - create files with simple templates and no tools
 
 Kreate is difficult to describe since the core is no tool, just some simple rules and tips how to create files from simple bash scripts called `kreate.sh`.
 If you follow these rules no tools are needed (except for bash), and you simply create complex trees of files and then:
