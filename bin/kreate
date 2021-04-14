@@ -30,7 +30,7 @@ Options can be:
 Only one of the following commands/options should be specified:
     -s|--status   kreate temporary files, show if files are +/new or M/modified
     -d|--diff     kreate temporary files, do: diff per file
-    -k|--kust     kreate files, do: kustomize build
+    -b|--build    kreate files, do: kustomize build
     -a|--apply    kreate files, do: kustomize build | kubectl apply -f -
 If none of the above commands are given, the files are just kreated
 $KREATE_EXTRA_HELP_TEXT
@@ -129,6 +129,10 @@ while [ ! $# -eq 0 ]; do
             export VERBOSE=false
             export INFO=false
             ;;
+        -i|--init)
+            kreate_init "$2"
+            shift
+            ;;
         -s|--status)
             export KREATE_FILE=kreate_tmp_file
             export KREATE_DONE=kreate_status
@@ -137,7 +141,7 @@ while [ ! $# -eq 0 ]; do
             export KREATE_FILE=kreate_tmp_file
             export KREATE_DONE=kreate_diff
             ;;
-        -k|--kust|--kustomize)
+        -b|--build)
             export KREATE_FILE=kreate_file
             unset KREATE_DONE
             FINAL_COMMAND=kustomize_build
@@ -146,14 +150,6 @@ while [ ! $# -eq 0 ]; do
             export KREATE_FILE=kreate_file
             unset KREATE_DONE
             FINAL_COMMAND=kustomize_apply
-            ;;
-        -i|--init)
-            kreate_init "$2"
-            shift
-            ;;
-        -m|--message)
-            KREATE_COMMIT_MESSAGE="$2"
-            shift
             ;;
         *)  # Default case: No more options, so break out of the loop.
             break
