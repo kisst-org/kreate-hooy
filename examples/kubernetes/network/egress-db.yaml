@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: egress-db
+spec:
+  podSelector:
+    matchLabels:
+      use-db: enabled
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - ipBlock:
+            cidr: "10.20.30.40/32"
+        - ipBlock:
+            cidr: "10.20.30.41/32"
+        - ipBlock:
+            cidr: "10.20.30.42/32"
+      ports:
+        - port: 1521
+          protocol: TCP
