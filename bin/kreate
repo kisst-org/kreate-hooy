@@ -1,15 +1,14 @@
 #!/bin/bash
 # Stop on error
-set -e
+#set -e
 
 #####################################################################
 # helper functions
 
-function info()    { ${INFO-true} && echo $*; }
-function verbose() { ${VERBOSE-false} && echo $*; }
-function debug()   { ${DEBUG-false} && echo $*; }
-function error() { echo 1>&2 $*; exit 1; }
-function nope() { verbose files created; }
+function info()    { ${INFO-true} && echo $* || true; }
+function verbose() { ${VERBOSE-false} && echo $* || true; }
+function debug()   { ${DEBUG-false} && echo $* || true; }
+function error() { echo ERROR 1>&2 $*; exit 1; }
 export -f info
 export -f verbose
 export -f debug
@@ -17,11 +16,11 @@ export -f error
 
 #####################################################################
 # commands
-declare -a command_alias=()
+declare -A command_alias=()
 commands=()
 
 #####################################################################
-# help
+# command help
 commands+=(help)
 KREATE_HELP_TEXT=()
 kreate_start_help() {
@@ -55,7 +54,7 @@ kreate_help_help() {
     echo 'help     display this help and exit'
 }
 ####################################
-# files
+# command files
 command_alias[-f]=files
 commands+=(files)
 kreate_start_files() {
@@ -69,7 +68,7 @@ kreate_help_files() {
     echo 'files    kreate files'
 }
 ####################################
-# status
+# command status
 commands+=(status)
 kreate_start_status() {
     export KREATE_FILE=kreate_tmp_file
@@ -98,7 +97,7 @@ kreate_help_status() {
 }
 
 ####################################
-# diff
+# command diff
 commands+=(diff)
 kreate_start_diff() {
     export KREATE_FILE=kreate_tmp_file
@@ -110,7 +109,7 @@ kreate_final_diff() {
 kreate_file_diff() {
     if [[ -f $ORIG_FILE ]]; then
         info diff $ORIG_FILE
-        #diff $ORIG_FILE $FILE
+        diff $ORIG_FILE $FILE
     else
         info no original file $ORIG_FILE
     fi
@@ -147,7 +146,7 @@ KREATE_INIT_DONE=false
 kreate_init() {
     if $KREATE_INIT_DONE; then
         debug skipping init $1;
-        exit 0;
+        return 0;
     fi
     if [[ -f  $1 ]] ;then
         verbose loading init file $1
@@ -205,14 +204,15 @@ while [ ! $# -eq 0 ]; do
     shift
 done
 kreate_init_default
+
 #####################################################################
 # parse arguments
 
 find_command() {
-    #result=${command_alias[$1]}
+    result=${command_alias[$1]}
     if [[ ! -z $result ]]; then
-        echo $result
         debug found alias $1 for $result
+        command=$result
         return 0
     fi
     found=false
@@ -233,15 +233,13 @@ kreate_run() {
         debug no command, assuming default command \'files\'
         command=files
     fi
-    debug PRE $command
     find_command $command
-    debug POST $command
-    verbose kreate $command $1
+    info kreate $command $1
     if [[ -x $1/kreate.sh ]]; then
         kreate_start_$command $1
         debug executing $1/kreate.sh
         $1/kreate.sh
-        #kreate_final_$command $1
+        kreate_final_$command $1
         debug kreate $command $1 succeeded
     else
        info Not available $1/kreate.sh
