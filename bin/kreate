@@ -22,7 +22,6 @@ commands=()
 #####################################################################
 # command help
 commands+=(help)
-KREATE_HELP_TEXT=()
 kreate_start_help() {
     cat << EOF
 Usage: ${0##*/} [options] [command] <dir>...
@@ -33,6 +32,8 @@ Options can be:
     -h|--help      display this help and exit
     -v|--verbose   verbose mode.
     -q|--quiet     quiet mode.
+    --debug        debug info
+    --rm           remove kreated files after all is done
     -i|--init-file use another init file
 One of the following commands can be specified:
 EOF
@@ -130,7 +131,7 @@ kreate_file() {
     else
         info kreating $(pwd)/$FILE
     fi
-    #echo $(pwd)/$FILE >>$KREATED_FILES
+    [[ ! -z $KREATED_FILES ]] && echo $(pwd)/$FILE >>$KREATED_FILES
  }
 kreate_tmp_file() {
     ORIG_FILE=$FILE
@@ -183,6 +184,9 @@ while [ ! $# -eq 0 ]; do
         -q|--quiet)
             export VERBOSE=false
             export INFO=false
+            ;;
+        --rm)
+            export KREATED_FILES=`pwd`/tmp.kreated.files
             ;;
         --debug)
             export VERBOSE=true
@@ -258,4 +262,11 @@ else
     for f in "$@"; do
         kreate_run $f
     done
+fi
+if [[ ! -z $KREATED_FILES ]]; then
+    for f in `cat $KREATED_FILES`; do
+        info rm $f
+        rm $f
+    done
+    rm $KREATED_FILES
 fi
