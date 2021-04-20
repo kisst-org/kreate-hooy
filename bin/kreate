@@ -144,10 +144,15 @@ kreate_run() {
         debug no command, assuming default command \'files\'
         command=files
     fi
+    old_command=$command
     find_command $command
     if [[ $command == help ]]; then
         kreate_start_help
         exit 0;
+    fi
+    if [[ -z $command ]]; then
+        echo Unknown command $old_command
+        exit 1
     fi
     info kreate $command $1
     if [[ -x $1/kreate.sh ]]; then
@@ -161,24 +166,25 @@ kreate_run() {
     fi
 }
 
+if [ ! $# -eq 0 ]; then
+    # check if first parameter is a directory with an executable kreate.sh file
+    # otherwise it is a command
+    if [[ ! -x $1/kreate.sh ]]; then
+        # the first argument is not a kreate directory so it must be a command
+        command=$1
+        debug kreate $command
+        shift
+    fi
+fi
 if [ $# -eq 0 ]; then
     debug no arguments, assume . as directory
     kreate_run .
 else
-    if [[ ! -x $1/kreate.sh ]]; then
-        # the first argument is not a kreate directory so it must be a command
-        command=$1
-        debug command $command
-        shift
-        if [ $# -eq 0 ]; then
-            debug no arguments, assume . as directory
-            kreate_run .
-        fi
-    fi
     for f in "$@"; do
         kreate_run $f
     done
 fi
+
 if [[ ! -z ${KREATED_FILES-} ]]; then
     for f in `cat $KREATED_FILES`; do
         info rm $f
