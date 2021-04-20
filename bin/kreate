@@ -133,7 +133,7 @@ find_command() {
                 error command $1 ambiguous between $result and $cmd
             fi
             result=$cmd
-            debug found matching command $cmd for abbreviated $1
+            debug found matching command $cmd for command argument $1
         fi
     done
     command=$result
@@ -145,8 +145,13 @@ kreate_run() {
         command=files
     fi
     find_command $command
+    if [[ $command == help ]]; then
+        kreate_start_help
+        exit 0;
+    fi
     info kreate $command $1
     if [[ -x $1/kreate.sh ]]; then
+        echo kreate_start_$command $1
         kreate_start_$command $1
         debug executing $1/kreate.sh
         $1/kreate.sh

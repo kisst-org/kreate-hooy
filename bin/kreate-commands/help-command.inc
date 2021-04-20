@@ -17,7 +17,7 @@ Options can be:
 One of the following commands can be specified:
 EOF
 for cmd in "${commands[@]}" ; do
-    printf "    %s" $line
+    printf "%10s   " $cmd
     kreate_help_$cmd
 done
 cat <<EOF
@@ -28,8 +28,7 @@ If no directory is given, the current directory . is used
 If the first argument matches a directory with a kreate.sh script, it is not
 interpreted as command. To specify a command, one can prefix it with --
 EOF
-exit 0
 }
 kreate_help_help() {
-    echo 'help     display this help and exit'
+    echo 'display this help and exit'
 }

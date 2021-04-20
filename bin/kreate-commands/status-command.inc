@@ -24,5 +24,5 @@ kreate_file_status() {
 }
 export -f kreate_file_status
 kreate_help_status() {
-    echo 'status   kreate temporary files, show if files are +/new or M/modified'
+    echo 'kreate temporary files, show if files are +/new or M/modified'
 }

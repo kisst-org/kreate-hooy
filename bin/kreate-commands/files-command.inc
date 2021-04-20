@@ -12,5 +12,5 @@ kreate_final_files() {
     return
 }
 kreate_help_files() {
-    echo 'files    kreate files'
+    echo 'kreate files'
 }
