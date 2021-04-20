@@ -1,6 +1,8 @@
 #!/bin/bash
 # Stop on error
 #set -e
+# Stop on undefined var
+set -u
 
 #####################################################################
 # helper functions
@@ -17,9 +19,10 @@ export -f error
 #####################################################################
 # commands
 declare -A command_alias=()
+command_alias[-h]=help
 commands=()
 
-for f in kreate-commands/*-command.inc; do
+for f in "$(dirname "$0")"/kreate-commands/*-command.inc; do
     source $f
 done
 #####################################################################
@@ -30,7 +33,7 @@ kreate_file() {
     else
         info kreating $(pwd)/$FILE
     fi
-    [[ ! -z $KREATED_FILES ]] && echo $(pwd)/$FILE >>$KREATED_FILES
+    [[ ! -z ${KREATED_FILES-} ]] && echo $(pwd)/$FILE >>$KREATED_FILES
  }
 kreate_tmp_file() {
     ORIG_FILE=$FILE
@@ -44,11 +47,12 @@ export -f kreate_tmp_file
 # initialisation
 KREATE_INIT_DONE=false
 kreate_init() {
+    if [[ -z  ${1-} ]] ;then return 0; fi
     if $KREATE_INIT_DONE; then
         debug skipping init $1;
         return 0;
     fi
-    if [[ -f  $1 ]] ;then
+    if [[ -f  ${1-} ]] ;then
         verbose loading init file $1
         if ! source $1; then
             KREATE_INIT_DONE=true
@@ -60,7 +64,7 @@ kreate_init() {
 }
 
 kreate_init_default() {
-    kreate_init $KREATE_INIT_FILE
+    kreate_init ${KREATE_INIT_FILE-}
     kreate_init ./.kreate_init
     kreate_init ~/.kreate_init
     kreate_init /etc/kreate_init
@@ -93,6 +97,10 @@ while [ ! $# -eq 0 ]; do
             export DEBUG=true
             ;;
         -i|--init)
+            if [[ -z ${2-} ]] ; then
+                echo options --init and -i need an filename as argument
+                exit 1
+            fi
             kreate_init "$2"
             shift
             ;;
@@ -112,7 +120,7 @@ kreate_init_default
 # parse arguments
 
 find_command() {
-    result=${command_alias[$1]}
+    result=${command_alias[$1]-}
     if [[ ! -z $result ]]; then
         debug found alias $1 for $result
         command=$result
@@ -132,7 +140,7 @@ find_command() {
 }
 
 kreate_run() {
-    if [[ -z $command ]]; then
+    if [[ -z ${command-} ]]; then
         debug no command, assuming default command \'files\'
         command=files
     fi
@@ -162,7 +170,7 @@ else
         kreate_run $f
     done
 fi
-if [[ ! -z $KREATED_FILES ]]; then
+if [[ ! -z ${KREATED_FILES-} ]]; then
     for f in `cat $KREATED_FILES`; do
         info rm $f
         rm $f
