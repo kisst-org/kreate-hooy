@@ -14,5 +14,5 @@ kreate_final_apply() {
 }
 
 kreate_help_apply() {
-    echo 'kreate files, do: kustomize build | kubectl apply -f -'
+    echo 'kreate files, do: kustomize build | kubectl apply -f -  (alias -a)'
 }

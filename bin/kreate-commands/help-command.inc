@@ -23,12 +23,12 @@ done
 cat <<EOF
 
 Commands may be prefixed with --, e.g. --diff, or abbreviated with fewer letters
-If no command is given, the default command is \'files\'
+If no command is given, the default command is 'files'
 If no directory is given, the current directory . is used
 If the first argument matches a directory with a kreate.sh script, it is not
 interpreted as command. To specify a command, one can prefix it with --
 EOF
 }
 kreate_help_help() {
-    echo 'display this help and exit'
+    echo 'display this help and exit (alias -h)'
 }

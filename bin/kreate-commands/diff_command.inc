@@ -20,5 +20,5 @@ kreate_file_diff() {
 }
 export -f kreate_file_diff
 kreate_help_diff() {
-    echo 'kreate temporary files, do: diff per file'
+    echo 'kreate temporary files, do: diff per file (alias -d)'
 }
