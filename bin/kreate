@@ -151,7 +151,6 @@ kreate_run() {
     fi
     info kreate $command $1
     if [[ -x $1/kreate.sh ]]; then
-        echo kreate_start_$command $1
         kreate_start_$command $1
         debug executing $1/kreate.sh
         $1/kreate.sh
@@ -169,7 +168,12 @@ else
     if [[ ! -x $1/kreate.sh ]]; then
         # the first argument is not a kreate directory so it must be a command
         command=$1
+        debug command $command
         shift
+        if [ $# -eq 0 ]; then
+            debug no arguments, assume . as directory
+            kreate_run .
+        fi
     fi
     for f in "$@"; do
         kreate_run $f
