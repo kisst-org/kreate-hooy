@@ -211,5 +211,5 @@ if [[  ${KREATE_AUTOREMOVE_NONE} != true ]]; then
         info rm -f $f
         rm -f $f
     done
-    rm -f $KREATED_AUTOREMOVE_FILES
 fi
+rm -f $KREATED_AUTOREMOVE_FILES
