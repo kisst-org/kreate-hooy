@@ -27,20 +27,37 @@ for f in "$(dirname "$0")"/kreate-commands/*-command.inc; do
 done
 #####################################################################
 # functions to be used in kreate.sh scripts
+export KREATE_AUTOREMOVE_ALL=false
+export KREATE_AUTOREMOVE_NONE=false
 kreate_file() {
     if [[ "$FILE" == "/"* ]]; then
         info kreating $FILE
     else
         info kreating $(pwd)/$FILE
     fi
-    [[ ! -z ${KREATED_FILES-} ]] && echo $(pwd)/$FILE >>$KREATED_FILES
+    # [[ ! -z ${KREATED_FILES-} ]] && echo $(pwd)/$FILE >>$KREATED_FILES
+    ${KREATE_AUTOREMOVE_ALL} && kreate_autoremove_file
+}
+# KREATED_AUTOREMOVE_FILES points to a a file containing all filenames that need to be removed
+# This is a file to be able to be communicated back from subshells.
+# The fi
+export KREATED_AUTOREMOVE_FILES=`pwd`/tmp.kreated.autoremove.files
+rm -f $KREATED_AUTOREMOVE_FILES
+
+# Environment var that can be used safely if one wants to mark a file specifically to always remove
+export KREATE_AUTOREMOVE=kreate_autoremove_file
+kreate_autoremove_file() {
+    debug registering autoremove for $(pwd)/$FILE
+    echo $(pwd)/$FILE >>$KREATED_AUTOREMOVE_FILES
  }
+
 kreate_tmp_file() {
     ORIG_FILE=$FILE
     FILE=tmp.kreated.$FILE
     debug kreating tmp file $FILE
 }
 export -f kreate_file
+export -f kreate_autoremove_file
 export -f kreate_tmp_file
 
 #####################################################################
@@ -89,7 +106,11 @@ while [ ! $# -eq 0 ]; do
             export INFO=false
             ;;
         --rm)
-            export KREATED_FILES=`pwd`/tmp.kreated.files
+            export KREATE_AUTOREMOVE_ALL=true
+            ;;
+        --no-rm)
+            export KREATE_AUTOREMOVE_ALL=false
+            export KREATE_AUTOREMOVE_NONE=true
             ;;
         --debug)
             export VERBOSE=true
@@ -166,7 +187,7 @@ kreate_run() {
     fi
 }
 
-if [ ! $# -eq 0 ]; then
+if [[ ! $# -eq 0 ]]; then
     # check if first parameter is a directory with an executable kreate.sh file
     # otherwise it is a command
     if [[ ! -x $1/kreate.sh ]]; then
@@ -176,7 +197,7 @@ if [ ! $# -eq 0 ]; then
         shift
     fi
 fi
-if [ $# -eq 0 ]; then
+if [[ $# -eq 0 ]]; then
     debug no arguments, assume . as directory
     kreate_run .
 else
@@ -185,10 +206,10 @@ else
     done
 fi
 
-if [[ ! -z ${KREATED_FILES-} ]]; then
-    for f in `cat $KREATED_FILES`; do
-        info rm $f
-        rm $f
+if [[  ${KREATE_AUTOREMOVE_NONE} != true ]]; then
+    for f in `cat $KREATED_AUTOREMOVE_FILES`; do
+        info rm -f $f
+        rm -f $f
     done
-    rm $KREATED_FILES
+    rm -f $KREATED_AUTOREMOVE_FILES
 fi
