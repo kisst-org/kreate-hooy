@@ -1,0 +1,26 @@
+#!/bin/bash
+
+file=$1
+if [[ -z $file ]]; then
+    echo ERROR: provide a filename to be encrypted
+    echo syntax: encrypt-file filename
+    exit 1
+fi
+
+if [[ ! -f $file ]]; then
+    echo ERROR file $file does not exist
+    exit 1
+fi
+
+
+if [[ -z $GPG_PASSWORD ]]; then
+    echo ERROR no password set, please set a password using the following two commands:
+    echo export GPG_PASSWORD
+    echo read -s GPG_PASSWORD
+    exit 1
+fi
+
+echo $GPG_PASSWORD | gpg --batch --yes --no-tty --pinentry-mode loopback --no-symkey-cache --passphrase-fd 0 --cipher-algo aes256 --symmetric $file
+
+echo Do not forget to remove the original file using
+printf "  rm $file\n"
