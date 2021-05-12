@@ -8,7 +8,7 @@ kreate_start_build() {
     unset KREATE_DONE
 }
 
-kreate_final_buidl() {
+kreate_final_build() {
     info kustomize build $1
     kustomize build $1
 }
