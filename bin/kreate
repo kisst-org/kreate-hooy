@@ -206,7 +206,7 @@ else
     done
 fi
 
-if [[  ${KREATE_AUTOREMOVE_NONE} != true ]]; then
+if [[  ${KREATE_AUTOREMOVE_NONE} != true && -f $KREATED_AUTOREMOVE_FILES ]]; then
     for f in `cat $KREATED_AUTOREMOVE_FILES`; do
         info rm -f $f
         rm -f $f
