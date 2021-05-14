@@ -9,8 +9,12 @@ kreate_start_apply() {
 }
 
 kreate_final_apply() {
-    info kustomize build $1 \| kubectl apply -f -
-    kustomize build $1 | kubectl apply -f -
+    if [[ -z $KUBECTL_CONTEXT ]]; then
+        echo KUBECTL_CONTEXT is not set
+        exit 1
+    fi
+    info kustomize build $1 \| kubectl apply --context $KUBECTL_CONTEXT -f -
+    kustomize build $1 | kubectl apply --context $KUBECTL_CONTEXT -f -
 }
 
 kreate_help_apply() {
