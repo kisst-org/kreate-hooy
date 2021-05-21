@@ -13,7 +13,7 @@ generate_password() {
     echo $(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w $length | head -n 1)
 }
 
-show_vars() {
+reverse_vars() {
     FILE=$1
     IFS=$'\n' lines=($(grep 'decrypt_str' $FILE))
     for line in "${lines[@]}"; do
@@ -24,10 +24,21 @@ show_vars() {
         echo @savv $varname $value
     done
 }
+export_vars() {
+    FILE=$1
+    IFS=$'\n' lines=($(grep 'decrypt_str' $FILE))
+    for line in "${lines[@]}"; do
+        varname=${line%=\$(decrypt_str*}
+        secured=${line#*\$(decrypt_str }
+        secured=${secured%)}
+        value=$(decrypt_str $secured)
+        echo export $varname=\$\'$value\'
+    done
+}
 
 secure_file() {
     FILE=$1
-    IFS=$'\n' lines=($(grep '^@savv' $FILE))
+    IFS=$'\n' lines=($(grep '^[ \t]*@savv' $FILE))
     for line in "${lines[@]}"; do
         IFS=' :=' read -ra arr <<<"$line"
         varname=${arr[1]}
@@ -40,10 +51,36 @@ secure_file() {
         fi
         echo securing $varname
         secured=$(encrypt_str $value)
-        sed -i "s|^@savv[ \t]*$varname[=: \t].*|$varname=\$(decrypt_str $secured)|" $FILE
+        sed -i "s|^[ \t]*@savv[ \t]*$varname[=: \t].*|$varname=\$(decrypt_str $secured)|" $FILE
     done
 }
 
+show_help() {
+cat <<EOF
+Usage: ${0##*/} [options] <file>...
+
+The purpose of savv is working with encrypted (shell) variables
+Options can be:
+    -h|--help               display this help and exit
+    -p|--password           provide a password for encryption/decryption
+    -g|--generate <length>  generate a random string of provided length and exit
+    -r|--reverse            reverse the encyption to view in a format to easily edit
+    -e|--export             show the decrypted values in a format that can be used in scripts
+
+If none of the --generate, --reverse or --export options are given, the default mode is to encrypt.
+In this mode single variables that are prefixed with @savv are encrypted. Examples are
+    @savv VAR1 secret1
+    @savv VAR2 @read
+    @savv VAR3 @generate
+A value of @read will ask the user for a password.
+A value of @generate will generate a password of length 32
+The lines will be replaced with something like:
+    VAR1=$(decode_str ...)
+
+When using the --export option the vars are output in decrypted format. This output can be used in a script, e.g.
+    eval $(savv -e -p $SAVV_MASTER_PASSWORD  ~/savv-passwords)
+EOF
+}
 command=secure_file
 while [ ! $# -eq 0 ]; do
     case $1 in
@@ -67,8 +104,11 @@ while [ ! $# -eq 0 ]; do
             echo $(generate_password $2)
             exit 0
             ;;
-        -v|--view)
-            command=show_vars
+        -r|--reverse)
+            command=reverse_vars
+            ;;
+        -e|--export)
+            command=export_vars
             ;;
         *)  # Default case: No more options, so break out of the loop.
             break
@@ -90,6 +130,6 @@ elif [[ $SAVV_PASSWORD == @generate ]]; then
 fi
 
 
-for file in $*; do
+for file in $@; do
     $command $file
 done
