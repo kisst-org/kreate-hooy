@@ -4,6 +4,27 @@ encrypt_str() {
     echo $( echo $1 | openssl aes-256-cbc -a -A -salt -pbkdf2 -pass pass:$SAVV_PASSWORD )
 }
 
+decrypt_str() {
+    echo $( echo $1 | openssl aes-256-cbc -d -a -A -pbkdf2 -pass pass:$SAVV_PASSWORD )
+}
+
+generate_password() {
+    length=${1:-32}
+    echo $(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w $length | head -n 1)
+}
+
+show_vars() {
+    FILE=$1
+    IFS=$'\n' lines=($(grep 'decrypt_str' $FILE))
+    for line in "${lines[@]}"; do
+        varname=${line%=\$(decrypt_str*}
+        secured=${line#*\$(decrypt_str }
+        secured=${secured%)}
+        value=$(decrypt_str $secured)
+        echo @savv $varname $value
+    done
+}
+
 secure_file() {
     FILE=$1
     IFS=$'\n' lines=($(grep '^@savv' $FILE))
@@ -15,7 +36,7 @@ secure_file() {
             echo Provide secret $varname
             read -u 0 -s value
         elif [[ $value == @generate ]]; then
-            value=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+            value=$(generate_password)
         fi
         echo securing $varname
         secured=$(encrypt_str $value)
@@ -23,13 +44,52 @@ secure_file() {
     done
 }
 
+command=secure_file
+while [ ! $# -eq 0 ]; do
+    case $1 in
+        -h|--help)
+            show_help
+            break
+            ;;
+        -p|--password)
+            if [[ -z ${2-} ]] ; then
+                echo options --password and -p need an password as argument
+                exit 1
+            fi
+            SAVV_PASSWORD=$2
+            shift
+            ;;
+        -g|--generate)
+            if [[ -z ${2-} ]] ; then
+                echo options --generate and -g need an length as argument
+                exit 1
+            fi
+            echo $(generate_password $2)
+            exit 0
+            ;;
+        -v|--view)
+            command=show_vars
+            ;;
+        *)  # Default case: No more options, so break out of the loop.
+            break
+    esac
+    shift
+done
+
 if [[ -z $SAVV_PASSWORD ]]; then
     echo SAVV_PASSWORD is not defined, use the following statements
     printf "  export SAVV_PASSWORD"
     printf "  read -s SAVV_PASSWORD"
-    exit 1
+        exit 1
+elif [[ $SAVV_PASSWORD == @read ]]; then
+    echo enter the password
+    read -s SAVV_PASSWORD
+elif [[ $SAVV_PASSWORD == @generate ]]; then
+    SAVV_PASSWORD=$(generate_password)
+    echo enncrypting variables with generated key $SAVV_PASSWORD
 fi
 
+
 for file in $*; do
-    secure_file $file
+    $command $file
 done
