@@ -1,0 +1,35 @@
+#!/bin/env bash
+
+encrypt_str() {
+    echo $( echo $1 | openssl aes-256-cbc -a -A -salt -pbkdf2 -pass pass:$SAVV_PASSWORD )
+}
+
+secure_file() {
+    FILE=$1
+    IFS=$'\n' lines=($(grep '^@savv' $FILE))
+    for line in "${lines[@]}"; do
+        IFS=' :=' read -ra arr <<<"$line"
+        varname=${arr[1]}
+        value=${arr[2]-@read}
+        if [[ $value == @read ]]; then
+            echo Provide secret $varname
+            read -u 0 -s value
+        elif [[ $value == @generate ]]; then
+            value=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 32 | head -n 1)
+        fi
+        echo securing $varname
+        secured=$(encrypt_str $value)
+        sed -i "s|^@savv[ \t]*$varname[=: \t].*|$varname=\$(decrypt_str $secured)|" $FILE
+    done
+}
+
+if [[ -z $SAVV_PASSWORD ]]; then
+    echo SAVV_PASSWORD is not defined, use the following statements
+    printf "  export SAVV_PASSWORD"
+    printf "  read -s SAVV_PASSWORD"
+    exit 1
+fi
+
+for file in $*; do
+    secure_file $file
+done

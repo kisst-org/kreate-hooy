@@ -1,0 +1,29 @@
+#!/bin/env bash
+
+decrypt_str() {
+    echo $( echo $1 | openssl aes-256-cbc -d -a -A -pbkdf2 -pass pass:$SAVV_PASSWORD )
+}
+
+
+show_vars() {
+    FILE=$1
+    IFS=$'\n' lines=($(grep 'decrypt_str' $FILE))
+    for line in "${lines[@]}"; do
+        varname=${line%=\$(decrypt_str*}
+        secured=${line#*\$(decrypt_str }
+        secured=${secured%)}
+        value=$(decrypt_str $secured)
+        echo @savv $varname $value
+    done
+}
+
+if [[ -z $SAVV_PASSWORD ]]; then
+    echo SAVV_PASSWORD is not defined, use the following statements
+    printf "  export SAVV_PASSWORD"
+    printf "  read -s SAVV_PASSWORD"
+    exit 1
+fi
+
+for file in $*; do
+    show_vars $file
+done
