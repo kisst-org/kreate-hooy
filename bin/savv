@@ -42,11 +42,12 @@ export_vars() {
 
 secure_file() {
     FILE=$1
-    IFS=$'\n' lines=($(grep '^[ \t]*@savv' $FILE))
+    IFS=$'\n' lines=($(grep '@savv' $FILE))
     for line in "${lines[@]}"; do
+        line=${line##*@savv}
         IFS=' :=' read -ra arr <<<"$line"
-        varname=${arr[1]}
-        value=${arr[2]-@read}
+        varname=${arr[0]}
+        value=${arr[1]-@read}
         if [[ $value == @read ]]; then
             echo Provide secret $varname
             read -u 0 -s value
@@ -55,7 +56,7 @@ secure_file() {
         fi
         echo securing $varname
         secured=$(encrypt_str $value)
-        sed -i "s|^[ \t]*@savv[ \t]*$varname[=: \t].*|$varname=\$(decrypt_str $secured)|" $FILE
+        sed -i "s|@savv[ \t]*$varname[=: \t].*|$varname=\$(decrypt_str $secured)|" $FILE
     done
 }
 
@@ -80,14 +81,14 @@ In this mode single variables that are prefixed with @savv are encrypted. Exampl
 A value of @read will ask the user for a password.
 A value of @generate will generate a password of length 32
 The lines will be replaced with something like:
-    VAR1=$(decode_str ...)
+    VAR1=\$(decrypt_str ...)
 
 When using the --export option the vars are output in decrypted format. This output can be used in a script, e.g.
-    eval $(savv -e -p $SAVV_MASTER_PASSWORD  ~/savv-passwords)
+    eval \$(savv -e -p \$SAVV_MASTER_PASSWORD  ~/savv-passwords)
 
 The decrypt_str is a function with the following defintion
     decrypt_str() {
-        echo $( echo $1 | openssl aes-256-cbc -d -a -A -pbkdf2 -pass pass:$SAVV_PASSWORD )
+        echo \$( echo $1 | openssl aes-256-cbc -d -a -A -pbkdf2 -pass pass:\$SAVV_PASSWORD )
     }
 EOF
 }
@@ -96,7 +97,7 @@ while [ ! $# -eq 0 ]; do
     case $1 in
         -h|--help)
             show_help
-            break
+            exit 0
             ;;
         -p|--password)
             if [[ -z ${2-} ]] ; then
