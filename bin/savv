@@ -19,13 +19,13 @@ generate_password() {
 
 reverse_vars() {
     FILE=$1
-    IFS=$'\n' lines=($(grep 'decrypt_str' $FILE))
+    IFS=$'\n' lines=($(grep '$(decrypt_str ' $FILE))
     for line in "${lines[@]}"; do
         varname=${line%=\$(decrypt_str*}
         secured=${line#*\$(decrypt_str }
         secured=${secured%)}
         value=$(decrypt_str $secured)
-        echo @savv $varname $value
+        echo $line | sed  -e "s|\$(decrypt_str $secured)|@savv($value)|"
     done
 }
 export_vars() {
@@ -42,21 +42,20 @@ export_vars() {
 
 secure_file() {
     FILE=$1
-    IFS=$'\n' lines=($(grep '@savv' $FILE))
+    IFS=$'\n' lines=($(grep '@savv(' $FILE))
     for line in "${lines[@]}"; do
-        line=${line##*@savv}
-        IFS=' :=' read -ra arr <<<"$line"
-        varname=${arr[0]}
-        value=${arr[1]-@read}
+        value=${line##*@savv(}
+        value=${value%%)*}
+        secret=$value
         if [[ $value == @read ]]; then
             echo Provide secret $varname
-            read -u 0 -s value
-        elif [[ $value == @generate ]]; then
-            value=$(generate_password)
+            read -u 0 -s secret
+        elif [[ $value == @generate* ]]; then
+            secret=$(generate_password)
         fi
-        echo securing $varname
-        secured=$(encrypt_str $value)
-        sed -i "s|@savv[ \t]*$varname[=: \t].*|$varname=\$(decrypt_str $secured)|" $FILE
+        echo securing $value FROM $line
+        secured=$(encrypt_str $secret)
+        sed -i -e "s|@savv($value)|\$(decrypt_str $secured)|" $FILE
     done
 }
 
@@ -71,6 +70,7 @@ Options can be:
     -g|-generate[:<len>]    generate a random string of provided length (default 32) and exit
     -r|--reverse            reverse the encyption to view in a format to easily edit
     -e|--export             show the decrypted values in a format that can be used in scripts
+    -n|--no-change          don't change the file, output changes (dry-run)
 
 If none of the --generate, --reverse or --export options are given, the default mode is to encrypt.
 In this mode single variables that are prefixed with @savv are encrypted. Examples are
@@ -116,6 +116,9 @@ while [ ! $# -eq 0 ]; do
             ;;
         -e|--export)
             command=export_vars
+            ;;
+        -n|--no-change)
+            DRY_RUN=true
             ;;
         *)  # Default case: No more options, so break out of the loop.
             break
