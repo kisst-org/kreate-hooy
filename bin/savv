@@ -18,25 +18,15 @@ generate_password() {
 }
 
 reverse_vars() {
-    FILE=$1
-    IFS=$'\n' lines=($(grep '$(decrypt_str ' $FILE))
-    for line in "${lines[@]}"; do
-        varname=${line%=\$(decrypt_str*}
-        secured=${line#*\$(decrypt_str }
-        secured=${secured%)}
-        value=$(decrypt_str $secured)
-        echo $line | sed  -e "s|\$(decrypt_str $secured)|@savv($value)|"
-    done
-}
-export_vars() {
-    FILE=$1
-    IFS=$'\n' lines=($(grep 'decrypt_str' $FILE))
-    for line in "${lines[@]}"; do
-        varname=${line%=\$(decrypt_str*}
-        secured=${line#*\$(decrypt_str }
-        secured=${secured%)}
-        value=$(decrypt_str $secured)
-        echo export $varname=\$\'$value\'
+    cat $1 | while IFS= read -r line; do
+        echo $line
+        if [[ ! ${line/decrypt_str} == $line ]]; then
+            varname=${line%=\$(decrypt_str*}
+            secured=${line#*\$(decrypt_str }
+            secured=${secured%)}
+            value=$(decrypt_str $secured)
+            echo $line | sed  -e "s|\$(decrypt_str $secured)|@savv($value)|"
+        fi
     done
 }
 
@@ -48,14 +38,18 @@ secure_file() {
         value=${value%%)*}
         secret=$value
         if [[ $value == @read ]]; then
-            echo Provide secret $varname
+            echo Provide secret for $line
             read -u 0 -s secret
         elif [[ $value == @generate* ]]; then
-            secret=$(generate_password)
+            secret=$(generate_password $value)
         fi
-        echo securing $value FROM $line
         secured=$(encrypt_str $secret)
-        sed -i -e "s|@savv($value)|\$(decrypt_str $secured)|" $FILE
+        if ${DRY_RUN:-false}; then
+            echo $line | sed -e "s|@savv($value)|\$(decrypt_str $secured)|"
+        else
+            echo securing ${line/@savv(*/@savv(...)}
+            sed -i -e "s|@savv($value)|\$(decrypt_str $secured)|" $FILE
+        fi
     done
 }
 
