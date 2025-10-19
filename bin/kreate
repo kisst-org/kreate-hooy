@@ -145,9 +145,10 @@ forall-envapps() {
 run_actions() {
     verbose reading def ${def_file} for ${env} with ${action_list}
     renderer=${default_renderer}
+    skip=false
     source ${def_file}
-    init_$renderer
-    if [[ ! -f ${main_env_file} ]]; then
+    init_renderer_${renderer}
+    if ${skip}; then
         info skipping $appname $env
         return 0
     fi
@@ -162,8 +163,7 @@ run_action_update() {
 }
 
 run_action_render() {
-    source ${def_file}
-    render_$renderer
+    $render_func
 }
 
 run_action_diff() {
@@ -224,27 +224,26 @@ update_last_helm_values_file() {
     done
 }
 
-init_helm_dirs() {
-    base_dir=$1
-    env_dir=${base_dir}/envs
-    output_dir=${compare_prefix_dir:-}${base_dir}/manifests/${env}/${appname}
-    helm_chart_dir=${base_dir}/helm-charts
-}
 
-init_helm() {
+init_renderer_helm() {
+    output_dir=manifests/${env}/${appname}
+    helm_chart_dir=helm/charts
     def_file_dir=$(dirname ${def_file})
-    init_helm_dirs $(dirname $(dirname $def_file_dir))
     main_env_file="$def_file_dir/values-${appname}-${env}.yaml"
-    helm_release=$appname # this is probably not really used with helm template
-    helm_command="helm template"
-    helm_value_files=${env_dir}/values-env-${env}.yaml
+    if [[ ! -f $main_env_file ]]; then
+        skip=true
+        return 0
+    fi
+    helm_value_files=helm/env-value-files/values-env-${env}.yaml
     helm_value_files+=" $def_file_dir/values-app-${appname}.yaml"
     helm_value_files+=" $main_env_file"
-    run_update_func=update_last_helm_values_file
+    #run_update_func=update_last_helm_values_file
+    render_func=render_helm
 }
 
 render_helm() {
-    init_helm
+    helm_command="helm template"
+    helm_release=$appname # this is probably not really used with helm template
     local f
     for f in ${helm_value_files}; do helm_command+=" -f ${f}"; done
     helm_command+=" $helm_release"
@@ -255,7 +254,5 @@ render_helm() {
         $cmd | split_into_files
     done
 }
-
-
 
 main "${@}"
