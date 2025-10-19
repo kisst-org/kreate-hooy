@@ -127,7 +127,7 @@ done
 }
 
 ################################################
-# generic functions
+# run actions
 
 forall-appenvs() {
     for def_file in $def_files; do
@@ -181,13 +181,9 @@ run_action_apply() {
 run_action_compare() {
     run_action_render
     olddir=${output_dir}
-    newdir=${compare_dir}/${env}/${appname}
+    local newdir=${compare_dir}/${env}/${appname}
 
     if ${clean_before_compare:-true}; then
-        verbose making tmp copies for cleaning
-        verbose_cmd mkdir -p tmp/$(dirname $olddir)
-        verbose_cmd cp -r $olddir tmp/$(dirname $olddir)
-        olddir=tmp/${olddir}
         verbose_cmd mkdir -p tmp/$(dirname $newdir)
         verbose_cmd cp -r $newdir tmp/$(dirname $newdir)
         newdir=tmp/${newdir}
@@ -226,7 +222,7 @@ update_last_helm_values_file() {
 
 
 init_renderer_helm() {
-    output_dir=manifests/${env}/${appname}
+    output_dir=tmp/manifests/${env}/${appname}
     helm_chart_dir=helm/charts
     def_file_dir=$(dirname ${def_file})
     main_env_file="$def_file_dir/values-${appname}-${env}.yaml"
