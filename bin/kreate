@@ -12,17 +12,20 @@ shopt -s extglob
 script_name="${0}"
 
 read_config() {
-    : ${RENDER_CONFIG_FILE:=${RENDER_ROOT_DIR:-.}/render.config}
-    main_command=forall_apps_envs
+    : ${RENDER_CONFIG_FILE:=~/.config/kreate-hooy/config}
     if [[ -f ${RENDER_CONFIG_FILE} ]]; then
         source ${RENDER_CONFIG_FILE}
+    fi
+    if [[ -d config.d ]] && "${use_config_d:-true}"; then
+        for inc in config.d/*.config; do
+            source $inc
+        done
     fi
     default_renderer=${RENDER_DEFAULT_RENDERER:-helm}
 }
 
 main() {
-    local command_list=git-pull,forall-appenvs,commit-all
-    local action_list=render
+    local action=render
     declare -A aliases
     declare -A kubectl_options
     declare -A action_funcs
@@ -66,18 +69,17 @@ parse_options() {
     replace_aliases "$@"
     for arg in "${parsed_args[@]}"; do
         case $arg in
-            -h|--help|help) main_command=show_help;;
+            -h|--help|help) show_help; exit 0;;
             -v|--verbose)   log_verbose=true; log_info=true;;
             -q|--quiet)     log_verbose=false; log_info=false;;
             --debug)        set -x;;
-            --env-list=*)   envs="$(get_rhs $arg)";;
-            --cmd-list=*)   action_list="$(get_rhs $arg)";;
+            env-list=*)     envs="${arg#env-list=:}";;
             env:*)          envs+=" ${arg#env:}";;
-            cmd:*)          action_list+=${arg#cmd:};;
+            cmd=*)          action="${arg#cmd=}";;
             update:*)       updates+=(${arg#update:}) ;;
-            diff)           action_list=diff;;
-            apply)          action_list=apply;;
-            compare:*)      action_list=compare; compare_dir=${arg#compare:};;
+            diff)           action=diff;;
+            apply)          action=apply;;
+            compare:*)      action=compare; compare_dir=${arg#compare:};;
             *)
                 if [[ -f ${arg} ]]; then def_files+=" ${arg}"
                 elif [[ -d ${arg} ]]; then def_files+=" ${arg}/*.def"
@@ -130,20 +132,20 @@ done
 forall-appenvs() {
     for def_file in $def_files; do
         for env in $envs; do
-            run_actions
+            run_action
         done
     done
 }
 forall-envapps() {
     for env in $envs; do
         for f in $def_files; do
-            run_actions
+            run_action
         done
     done
 }
 
-run_actions() {
-    verbose reading def ${def_file} for ${env} with ${action_list}
+run_action() {
+    verbose reading def ${def_file} for ${env} with ${action}
     renderer=${default_renderer}
     skip=false
     source ${def_file}
@@ -152,10 +154,8 @@ run_actions() {
         info skipping $appname $env
         return 0
     fi
-    for action in ${action_list//,/ }; do
-        info running $action for ${env} ${appname} to ${output_dir}
-        run_action_$action;
-    done
+    info running $action for ${env} ${appname} to ${output_dir}
+    run_action_$action;
 }
 
 run_action_update() {
