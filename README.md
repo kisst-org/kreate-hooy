@@ -1,65 +1,74 @@
-# kreate - create files with simple templates and no tools
+# kreate-hooy: Kubernetes Rendering Environment Applications with Template (with Helm Or Other Yaml-tools)
 
-Kreate is difficult to describe since the core is no tool, just some simple rules and tips how to create files from simple bash scripts called `kreate.sh`.
-If you follow these rules no tools are needed (except for bash), and you simply create complex trees of files and then:
-1. create/update a set of files and commit these files in version control like git
-2. create (temporary) set of files for each time you use these files for other tools like kustomize, kubectl or basically anything you like.
+The program `kreate` is a simple but flexible tool to render manifests for kubernetes.
 
-# Why templates
-The advantage of the template approach is to provide and maintain uniformity when you have to create and maintain many similar files. 
-The first `kreate.sh` scripts were created for a project where about 15 different applications needed to deployed in different kubernetes clusters (development, test, production, etc).
-Each application had several files (kustomization, deployment, service, ingress, ...) that were very similar, with slight differences.
-For each environment, for each application some more files were needed (kustomization, ConfigMaps, patches, property files, ...) some unique, but some nearly identical.
-In total it was expected to have over 200 different files.
+The working is to render the manifest for a specific application (`appname`) and a specific environment.
 
-Manually copying and pasting from template files might be nice for initial setup.
-However, often some changes need to be made, and then manually editing all relevant files would become a maintenance nightmare.
-It would also become very difficult to provide consistency.
-Hence, whenever possible, similar files should be generated from a template.
+# Environments
+Some examples of environments are:
+- `lab`: meant for infra structure testing
+- `tst`: meant for testing applications
+- `stg`: staging
+- `prd`: production
+- `all`: all environments of an application
+In general it is recommended to use short (e.g. 3 letter) names for environments.
 
-# Philosophy
-- **Don't require any tools**: All that is needed is bash. 
-  This means that just added the `kreate.sh` scripts to you version control, would allow you to kreate the files on any (Linux or otherwise) system that has bash installed.
-   The `kreate` tool provided in the `bin` directory is nice for extra features, but not needed
-   It is of course possible to use other tools from the bash script if needed, like grep, sed, etc, but this is not needed.
-   You could use other tools like `python` or Jinja templating, but only do so if really needed.
- - **Run without needing any environment variables**: The behaviour of the scripts can be enhanced or influenced with some variables, but it should run fine without. 
-   The `kreate` tool helps setting these for you.
- - **Just running `kreate.sh` should work**: This is mainly a result of the above rules.
- - **Only kreate files that make sense**: This means files that are very similar.
-   For unique files it makes little sense to kreate these. 
-   Such files can nicely co-exist next to kreated files. 
- 
+# Render Definitions
 
-# Using the kreate tool
-To support working with kreate.sh templates a simple tool, called `kreate`, is provided.
-This tool basically just calls your own `kreate.sh` script(s), but provides some extra features:
-- providing helpful output what is kreated on different verbosity levels (normal, `--verbose`, `--debug` or `--quiet`)
-- viewing which files would be changed with `--status`
-- viewing the difference if new files would be kreated and existing files with `--diff`
-- building output based on the created files using `kustomize`
-- immediately applying the kustomize output with `kubectl apply`
 
-The current output of `kreate --help` is:
+# Running `kreate`
+It can be run with the following options:
+
 ```
-Usage: kreate [options] <dir>...
+kreate [ option | command/alias | render-def ]...
 
-The purpose of kreate is calling kreate.sh to create files
-and then optionally execute a command like git or kustomize
-Options can be:
-    -h|--help      display this help and exit
-    -v|--verbose   verbose mode.
-    -q|--quiet     quiet mode.
-    -i|--init-file use another init file
-Only one of the following commands/options should be specified:
-    -s|--status   kreate temporary files, show if files are +/new or M/modified
-    -d|--diff     kreate temporary files, do: diff per file
-    -b|--build    kreate files, do: kustomize build
-    -a|--apply    kreate files, do: kustomize build | kubectl apply -f -
-If none of the above commands are given, the files are just kreated
+Options:
+  -h|--help     show this help
+  -v|--verbose  give more output
+  -q|--quiet    no output
+  -e|--env=<e>  add environment <e> to render
+Commands
+  help          show_help
+  diff          run 'kubectl diff' with the rendered manifests
+  apply         run 'kubectl apply' with the rendered manifests
+  compare       compare to same appname in other directory
+  update:<expr> for helm update the final values with yq expression
+  commit        TODO: run 'git commit' (pull is implied)
+  pull          TODO: run 'git pull' before starting to render, to avoid merge conflicts
+
+Render Definitions:
+Can either be a file, that will be sourced, or a directory that contains exactly 1 file with a name 'render*.def'.
+
+Aliases:
+  User defined
 ```
-Note that `kreate` is still very much under development, and the features and command line options might change.
-Some possible changes are
-- To use a command like `diff` instead of an option like `--diff`. This was working but the problem was that the default behaviour was just to kreate files, and no command was needed. This needs further design.
-- Add extra options, using a init system, and make the two kustomize options just an extension module
-- Add anOptionally removing the kreated files after they has been used (planned feature)
+
+# Installation
+The only requirement is to have a recent version of `bash` available.
+
+Additionally the following tools are needed for some commands:
+- `helm`: for rendering helm templates
+- `yq`: is needed for splitting the output of `helm template` to individual files
+- `git`: for the `pull` and `commit` commands
+- `kubectl`: with a correct kubeconfig file for the `diff` and `apply`
+
+Installation can be done by copying the `kreate` script to the correct location.
+```
+curl -OL https://raw.githubusercontent.com/kisst-org/kreate-hooy/refs/heads/main/bin/kreate
+chmod 755 kreate
+```
+No further file need to be downloaded
+
+# Directory structure
+The script can be placed in the directory with all the manifests definitions.
+
+The following directory structure is recommended when using `helm` as renderer:
+- `kreate`: the script itself
+- `apps/<appname>/render-app-<appname>.def`: render-definitions for an application and environments
+- `apps/<appname>/values-app-<appname>.yaml`:  helm values file for all environments of an application (included before the environment specifc values)
+- `apps/<appname>/values-<appname>-<env>.yaml`: helm values file for a specific environment of an application
+- Optionally `apps/<appname>/render-appenv-<appname>-<env>.def`: render-definition for a specific environment of an application. Only needed if this
+- `helm/charts`: the helm-charts that can be referred to in the render definitions
+- `helm/env-value-files/values-<env>.def`: values specific for this environment
+- `tmp/manifests`: the location where the rendered manifests are stored
+- `deployed/manifests`: the location to store rendered manifests that are actually are dpeloyed
