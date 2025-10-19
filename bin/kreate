@@ -1,215 +1,261 @@
-#!/bin/bash
-# Stop on error
-#set -e
-# Stop on undefined var
-set -u
+#!/usr/bin/env bash
+# Script Name: render-manifests
+# Description: render helm manifests for applications and environments
+# Author: Mark Hooijkaas
+# Sourcecode: https://github.com/kisst-org/markisst/
+# License: Apache License version 2.0
+# Install or update to newest version with following command:
+#   curl -OL https://raw.githubusercontent.com/kisst-org/markisst/refs/heads/main/render-manifests && chmod 755 render-manifests
 
-#####################################################################
-# helper functions
+set -eu
+shopt -s extglob
+script_name="${0}"
 
-function info()    { ${INFO-true} && echo $* || true; }
-function verbose() { ${VERBOSE-false} && echo $* || true; }
-function debug()   { ${DEBUG-false} && echo $* || true; }
-function error() { echo ERROR 1>&2 $*; exit 1; }
-export -f info
-export -f verbose
-export -f debug
-export -f error
-
-#####################################################################
-# commands
-declare -A command_alias=()
-command_alias[-h]=help
-commands=()
-
-for f in "$(dirname "$0")"/kreate-commands/*-command.inc; do
-    source $f
-done
-#####################################################################
-# functions to be used in kreate.sh scripts
-export KREATE_AUTOREMOVE_ALL=false
-export KREATE_AUTOREMOVE_NONE=false
-kreate_file() {
-    if [[ "$FILE" == "/"* ]]; then
-        info kreating $FILE
-    else
-        info kreating $(pwd)/$FILE
+read_config() {
+    : ${RENDER_CONFIG_FILE:=${RENDER_ROOT_DIR:-.}/render.config}
+    main_command=forall_apps_envs
+    if [[ -f ${RENDER_CONFIG_FILE} ]]; then
+        source ${RENDER_CONFIG_FILE}
     fi
-    # [[ ! -z ${KREATED_FILES-} ]] && echo $(pwd)/$FILE >>$KREATED_FILES
-    ${KREATE_AUTOREMOVE_ALL} && kreate_autoremove_file
-}
-# KREATED_AUTOREMOVE_FILES points to a a file containing all filenames that need to be removed
-# This is a file to be able to be communicated back from subshells.
-# The fi
-export KREATED_AUTOREMOVE_FILES=`pwd`/tmp.kreated.autoremove.files
-rm -f $KREATED_AUTOREMOVE_FILES
-
-# Environment var that can be used safely if one wants to mark a file specifically to always remove
-export KREATE_AUTOREMOVE=kreate_autoremove_file
-kreate_autoremove_file() {
-    debug registering autoremove for $(pwd)/$FILE
-    echo $(pwd)/$FILE >>$KREATED_AUTOREMOVE_FILES
- }
-
-kreate_tmp_file() {
-    ORIG_FILE=$FILE
-    FILE=tmp.kreated.$FILE
-    debug kreating tmp file $FILE
-}
-export -f kreate_file
-export -f kreate_autoremove_file
-export -f kreate_tmp_file
-
-#####################################################################
-# initialisation
-KREATE_INIT_DONE=false
-kreate_init() {
-    if [[ -z  ${1-} ]] ;then return 0; fi
-    if $KREATE_INIT_DONE; then
-        debug skipping init $1;
-        return 0;
-    fi
-    if [[ -f  ${1-} ]] ;then
-        verbose loading init file $1
-        if ! source $1; then
-            KREATE_INIT_DONE=true
-            debug stop loading further init files, init file returned non zero
-        fi
-    else
-        debug init file $1 not available
-    fi
+    default_renderer=${RENDER_DEFAULT_RENDERER:-helm}
 }
 
-kreate_init_default() {
-    kreate_init ${KREATE_INIT_FILE-}
-    kreate_init ./.kreate_init
-    kreate_init ~/.kreate_init
-    kreate_init /etc/kreate_init
+main() {
+    local command_list=git-pull,forall-appenvs,commit-all
+    local action_list=render
+    declare -A aliases
+    declare -A kubectl_options
+    declare -A action_funcs
+    def_files=""
+    envs=""
+    declare -ag updates=()
+    read_config
+    parse_options "${@}"
+    forall-appenvs
 }
 
-#####################################################################
-# parse arguments
-unset command
-while [ ! $# -eq 0 ]; do
-    case $1 in
-        -h|help|--help)
-            command=help
-            shift
-            break
-            ;;
-        -v|--verbose)
-            export VERBOSE=true
-            export INFO=true
-            ;;
-        -q|--quiet)
-            export VERBOSE=false
-            export INFO=false
-            ;;
-        --rm)
-            export KREATE_AUTOREMOVE_ALL=true
-            ;;
-        --no-rm)
-            export KREATE_AUTOREMOVE_ALL=false
-            export KREATE_AUTOREMOVE_NONE=true
-            ;;
-        --debug)
-            export VERBOSE=true
-            export INFO=true
-            export DEBUG=true
-            ;;
-        -i|--init)
-            if [[ -z ${2-} ]] ; then
-                echo options --init and -i need an filename as argument
-                exit 1
+verbose() { if ${log_verbose:-false}; then printf "%s " "${@}"; echo; fi }
+info()    { if ${log_info:-true};     then echo "${@}"; fi }
+verbose_cmd() {
+    if ${log_verbose:-false}; then printf "    "; echo "${@}"; fi
+    cmd=$1; shift
+    $cmd "${@}"
+}
+get_lhs() { echo ${1/=*([^=])/}; }  # get the lhs (left hand side) from lhs=rhs
+get_rhs() { echo ${1/*([^=])=/}; }  # get the rhs (right hand side) from lhs=rhs
+
+replace_aliases() {
+    declare -ag parsed_args=()
+    for arg in "${@}"; do
+        lhs=$(get_lhs $arg)
+        local al=${aliases[$lhs]:-none}
+        if [[ $al != none ]]; then
+            rhs=$(get_rhs $arg)
+            if [[ -z $rhs ]]; then
+                parsed_args+=("$arg")
+            else
+                parsed_args+=($(printf "%s" "$al"))
             fi
-            kreate_init "$2"
-            shift
-            ;;
-        --*)
-            command=${1#--}
-            shift
-            break
-            ;;
-        *)  # Default case: No more options, so break out of the loop.
-            break
-    esac
-    shift
+        else
+            parsed_args+=("$arg")
+        fi
+    done
+}
+
+parse_options() {
+    replace_aliases "$@"
+    for arg in "${parsed_args[@]}"; do
+        case $arg in
+            -h|--help|help) main_command=show_help;;
+            -v|--verbose)   log_verbose=true; log_info=true;;
+            -q|--quiet)     log_verbose=false; log_info=false;;
+            --debug)        set -x;;
+            --env-list=*)   envs="$(get_rhs $arg)";;
+            --cmd-list=*)   action_list="$(get_rhs $arg)";;
+            env:*)          envs+=" ${arg#env:}";;
+            cmd:*)          action_list+=${arg#cmd:};;
+            update:*)       updates+=(${arg#update:}) ;;
+            diff)           action_list=diff;;
+            apply)          action_list=apply;;
+            compare:*)      action_list=compare; compare_dir=${arg#compare:};;
+            *)
+                if [[ -f ${arg} ]]; then def_files+=" ${arg}"
+                elif [[ -d ${arg} ]]; then def_files+=" ${arg}/*.def"
+                else
+                    echo unknown argument ${arg}, should be a command, file or directory with one \*.def file
+                    show_help
+                    exit 1
+                fi
+        esac
+    done
+    verbose running $(basename $0) ${parsed_args[@]}
+    if [[ -z $envs ]]; then envs=${RENDER_DEFAULT_ENVS:-tst}; fi
+    envs=${envs//,/ }  # split on comma
+    # better test that also works with one or more spaces, might be:
+    #   if [[ ${envs:-} =~ '^ *$' ]]; then ...
+    # see https://unix.stackexchange.com/questions/146942/how-can-i-test-if-a-variable-is-empty-or-contains-only-spaces
+}
+
+
+show_help() { cat <<EOF
+$(basename ${script_name}) [ option | command/alias | render-def ]...
+
+Options:
+  -h|--help     show this help
+  -v|--verbose  give more output
+  -q|--quiet    no output
+  -e|--env=<e>  add environment <e> to render
+Commands
+  help          show_help
+  diff          run 'kubectl diff' with the rendered manifests
+  apply         run 'kubectl apply' with the rendered manifests
+  compare:<to>  compare to same in other manifests directory
+  update:<expr> for helm update the final values with yq expression
+  commit        TODO: run 'git commit' (pull is implied)
+  pull          TODO: run 'git pull' before starting to render, to avoid merge conflicts
+
+Render Definitions:
+Can either be a file, that will be sourced, or a directory that contains exactly 1 file with a name 'render*.def'.
+
+Aliases:
+EOF
+for key in $(printf "%s\n" ${!aliases[@]} | sort); do
+    printf "  %-13s %s\n" $key "${aliases[$key]}"
 done
-kreate_init_default
+}
 
-#####################################################################
-# parse arguments
+################################################
+# generic functions
 
-find_command() {
-    result=${command_alias[$1]-}
-    if [[ ! -z $result ]]; then
-        debug found alias $1 for $result
-        command=$result
+forall-appenvs() {
+    for def_file in $def_files; do
+        for env in $envs; do
+            run_actions
+        done
+    done
+}
+forall-envapps() {
+    for env in $envs; do
+        for f in $def_files; do
+            run_actions
+        done
+    done
+}
+
+run_actions() {
+    verbose reading def ${def_file} for ${env} with ${action_list}
+    renderer=${default_renderer}
+    source ${def_file}
+    init_$renderer
+    if [[ ! -f ${main_env_file} ]]; then
+        info skipping $appname $env
         return 0
     fi
-    found=false
-    for cmd in "${commands[@]}"; do
-        if [[ "$cmd" == "$1"* ]]; then
-            if $found; then
-                error command $1 ambiguous between $result and $cmd
-            fi
-            result=$cmd
-            debug found matching command $cmd for command argument $1
-        fi
+    for action in ${action_list//,/ }; do
+        info running $action for ${env} ${appname} to ${output_dir}
+        run_action_$action;
     done
-    command=$result
 }
 
-kreate_run() {
-    if [[ -z ${command-} ]]; then
-        debug no command, assuming default command \'files\'
-        command=files
-    fi
-    old_command=$command
-    find_command $command
-    if [[ $command == help ]]; then
-        kreate_start_help
-        exit 0;
-    fi
-    if [[ -z $command ]]; then
-        echo Unknown command $old_command
-        exit 1
-    fi
-    info kreate $command $1
-    if [[ -x $1/kreate.sh ]]; then
-        kreate_start_$command $1
-        debug executing $1/kreate.sh
-        $1/kreate.sh
-        kreate_final_$command $1
-        debug kreate $command $1 succeeded
-    else
-       info Not available $1/kreate.sh
-    fi
+run_action_update() {
+    update_last_helm_values_file
 }
 
-if [[ ! $# -eq 0 ]]; then
-    # check if first parameter is a directory with an executable kreate.sh file
-    # otherwise it is a command
-    if [[ ! -x $1/kreate.sh ]]; then
-        # the first argument is not a kreate directory so it must be a command
-        command=$1
-        debug kreate $command
-        shift
-    fi
-fi
-if [[ $# -eq 0 ]]; then
-    debug no arguments, assume . as directory
-    kreate_run .
-else
-    for f in "$@"; do
-        kreate_run $f
-    done
-fi
+run_action_render() {
+    source ${def_file}
+    render_$renderer
+}
 
-if [[  ${KREATE_AUTOREMOVE_NONE} != true && -f $KREATED_AUTOREMOVE_FILES ]]; then
-    for f in `cat $KREATED_AUTOREMOVE_FILES`; do
-        info rm -f $f
-        rm -f $f
+run_action_diff() {
+    run_action_render
+    info diffing $output_dir
+    verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir || true
+}
+
+run_action_apply() {
+    run_action_render
+    info applying $output_dir
+    verbose_cmd kubectl apply ${kubectl_options[$env]} -f $output_dir
+}
+
+run_action_compare() {
+    run_action_render
+    olddir=${output_dir}
+    newdir=${compare_dir}/${env}/${appname}
+
+    if ${clean_before_compare:-true}; then
+        verbose making tmp copies for cleaning
+        verbose_cmd mkdir -p tmp/$(dirname $olddir)
+        verbose_cmd cp -r $olddir tmp/$(dirname $olddir)
+        olddir=tmp/${olddir}
+        verbose_cmd mkdir -p tmp/$(dirname $newdir)
+        verbose_cmd cp -r $newdir tmp/$(dirname $newdir)
+        newdir=tmp/${newdir}
+        pre_diff_cleanup $newdir $olddir
+    fi
+    info diffing $newdir $olddir
+    verbose_cmd diff -r $newdir $olddir || true
+}
+
+basic_cleanup () {
+    verbose removing comments
+    sed -i -e '/^ *#/d' $1/*.yaml $2/*.yaml
+    verbose removing quotes around values starting or ennding with text
+    sed -i -e 's/: "\([a-zA-Z].*\)"$/: \1/' $1/*.yaml $2/*.yaml
+    sed -i -e 's/: "\([a-zA-Z0-9].*[a-zA-Z]\)"$/: \1/' $1/*.yaml $2/*.yaml
+}
+
+pre_diff_cleanup() {
+    basic_cleanup $1 $2
+}
+
+split_into_files() {
+    yq -s \"$output_dir/\"'+ (.kind | downcase) + "_" + .metadata.name + ".yaml"'
+    rm -f ${output_dir}/_.yaml
+}
+
+################################################
+# helm module
+
+update_last_helm_values_file() {
+    local f=${helm_value_files[-1]}
+    for u in ${updates[@]}; do
+        verbose_cmd yq -i $u $f
     done
-fi
-rm -f $KREATED_AUTOREMOVE_FILES
+}
+
+init_helm_dirs() {
+    base_dir=$1
+    env_dir=${base_dir}/envs
+    output_dir=${compare_prefix_dir:-}${base_dir}/manifests/${env}/${appname}
+    helm_chart_dir=${base_dir}/helm-charts
+}
+
+init_helm() {
+    def_file_dir=$(dirname ${def_file})
+    init_helm_dirs $(dirname $(dirname $def_file_dir))
+    main_env_file="$def_file_dir/values-${appname}-${env}.yaml"
+    helm_release=$appname # this is probably not really used with helm template
+    helm_command="helm template"
+    helm_value_files=${env_dir}/values-env-${env}.yaml
+    helm_value_files+=" $def_file_dir/values-app-${appname}.yaml"
+    helm_value_files+=" $main_env_file"
+    run_update_func=update_last_helm_values_file
+}
+
+render_helm() {
+    init_helm
+    local f
+    for f in ${helm_value_files}; do helm_command+=" -f ${f}"; done
+    helm_command+=" $helm_release"
+    verbose_cmd rm -rf ${output_dir}
+    for ch in $helm_charts; do
+        local cmd="$helm_command $helm_chart_dir/$ch"
+        verbose "    $cmd"
+        $cmd | split_into_files
+    done
+}
+
+
+
+main "${@}"
