@@ -54,7 +54,7 @@ Additionally the following tools are needed for some commands:
 
 Installation can be done by copying the `kreate` script to the correct location.
 ```
-curl -OL https://raw.githubusercontent.com/kisst-org/kreate-hooy/refs/heads/main/bin/kreate
+curl -OL https://raw.githubusercontent.com/kisst-org/kreate-hooy/refs/heads/main/kreate
 chmod 755 kreate
 ```
 No further file need to be downloaded
