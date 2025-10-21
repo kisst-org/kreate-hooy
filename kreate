@@ -160,6 +160,8 @@ run_action() {
         return 0
     fi
     info running $action for ${env} ${appname} to ${output_dir}
+    run_updates
+    $render_func
     run_action_$action;
 }
 
@@ -171,12 +173,10 @@ run_updates() {
 }
 
 run_action_render() {
-    run_updates
-    $render_func
-}
+   verbose rendered all files to "${output_dir}"
+ }
 
 run_action_diff() {
-    run_action_render
     info diffing $output_dir
     if ${log_verbose:-false}; then
         verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir || true
@@ -186,13 +186,11 @@ run_action_diff() {
 }
 
 run_action_apply() {
-    run_action_render
     info applying $output_dir
     verbose_cmd kubectl apply ${kubectl_options[$env]} -f $output_dir
 }
 
 run_action_compare() {
-    run_action_render
     olddir=${output_dir}
     local newdir=${compare_dir}/${env}/${appname}
 
