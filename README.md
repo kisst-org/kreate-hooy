@@ -2,7 +2,7 @@
 
 The program `kreate` is a simple but flexible tool to render manifests for kubernetes.
 
-The working is to render the manifest for a specific application (`appname`) and a specific environment.
+The purpose is to render the manifests for a specific application (`appname`) and a specific environment.
 
 # Environments
 Some examples of environments are:
