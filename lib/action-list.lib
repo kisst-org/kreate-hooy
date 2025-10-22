@@ -1,0 +1,41 @@
+#####################################
+# action-list module
+
+
+init_module_action-list() {
+    declare -g action_list=render
+}
+
+################################################
+# run actions
+
+forall-appenvs() {
+    for def_file in $def_files; do
+        for env in $envs; do
+            run_actions
+        done
+    done
+}
+forall-envapps() {
+    for env in $envs; do
+        for f in $def_files; do
+            run_actions
+        done
+    done
+}
+
+run_actions() {
+    renderer=""
+    skip=false
+    source ${def_file}
+    init_renderer_${renderer}
+    output_dir="${target_dir}/${env}/${appname}"
+    if ${skip}; then
+        info skipping $appname $env
+        return 0
+    fi
+    for action in ${action_list//,/ }; do
+        info running $action with ${output_dir} for ${env} ${appname}
+        run_action_$action;
+    done
+}

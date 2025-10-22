@@ -1,0 +1,57 @@
+#####################################
+# argparse module
+
+init_module_argparse() {
+    declare -Ag aliases
+    declare -ag parsed_args=()
+}
+
+replace_aliases() {
+    for arg in "${@}"; do
+        local al="${aliases[$arg]:-none}"
+        if [[ "$al" != none ]]; then
+            replaced=true
+            parsed_args+=("$al")
+        else
+            parsed_args+=("$arg")
+        fi
+    done
+}
+
+parse_options() {
+    local replaced=false
+    set -- "${parsed_args[@]}"
+    while [[ $# > 0 ]]; do
+        arg=$1
+        case $arg in
+            -h|--help|help) show_help; exit 0;;
+            -v|--verbose)   log_verbose=true; log_info=true;;
+            -q|--quiet)     log_verbose=false; log_info=false;;
+            --debug)        set -x;;
+            to:*)           target_dir="${arg#to:}";;
+            env:*)          envs+=" ${arg#env:}";;
+            cmd:*)          action_list="${arg#cmd:}";;
+            update)         updates+=("\"$2\""); shift;;
+            update:*)       updates+=("${arg#update:}=$2"); shift ;;
+            diff)           action_list=update,render,diff;;
+            apply)          action_list=update,render,apply;;
+            compare:*)      action_list=update,render,compare; compare_dir=${arg#compare:};;
+            aliases)        show_aliases; exit 0;;
+            *)
+                if [[ -f ${arg} ]]; then def_files+=" ${arg}"
+                elif [[ -d ${arg} ]]; then def_files+=" ${arg}/*.def"
+                else
+                    echo unknown argument ${arg}, should be a command, file or directory with one \*.def file
+                    show_help
+                    exit 1
+                fi
+        esac
+        shift
+    done
+    verbose command $(basename $0) ${parsed_args[@]}
+    if [[ -z $envs ]]; then envs=${RENDER_DEFAULT_ENVS:-tst}; fi
+    envs=${envs//,/ }  # split on comma
+    # better test that also works with one or more spaces, might be:
+    #   if [[ ${envs:-} =~ '^ *$' ]]; then ...
+    # see https://unix.stackexchange.com/questions/146942/how-can-i-test-if-a-variable-is-empty-or-contains-only-spaces
+}

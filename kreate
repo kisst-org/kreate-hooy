@@ -56,148 +56,17 @@ main() {
 
     lib_dir="$(dirname $(readlink -f ${BASH_SOURCE[0]}))/lib"
     load_module "${lib_dir}"/logging.lib "${@}"
-    parse_loglevel "${@}"
-    local action_list=render
-    declare -Ag aliases
     load_modules "${lib_dir}"/*.lib
     def_files=""
     envs=""
     local target_dir=tmp/manifests
     declare -a updates=()
-    declare -ag parsed_args=()
     read_config
     replace_aliases "${@}"
     parse_options
     forall-appenvs
 }
 
-replace_aliases() {
-    for arg in "${@}"; do
-        local al="${aliases[$arg]:-none}"
-        if [[ "$al" != none ]]; then
-            replaced=true
-            parsed_args+=("$al")
-        else
-            parsed_args+=("$arg")
-        fi
-    done
-}
 
-parse_options() {
-    local replaced=false
-    set -- "${parsed_args[@]}"
-    while [[ $# > 0 ]]; do
-        arg=$1
-        case $arg in
-            -h|--help|help) show_help; exit 0;;
-            -v|--verbose)   log_verbose=true; log_info=true;;
-            -q|--quiet)     log_verbose=false; log_info=false;;
-            --debug)        set -x;;
-            to:*)           target_dir="${arg#to:}";;
-            env:*)          envs+=" ${arg#env:}";;
-            cmd:*)          action_list="${arg#cmd:}";;
-            update)         updates+=("\"$2\""); shift;;
-            update:*)       updates+=("${arg#update:}=$2"); shift ;;
-            diff)           action_list=update,render,diff;;
-            apply)          action_list=update,render,apply;;
-            compare:*)      action_list=update,render,compare; compare_dir=${arg#compare:};;
-            aliases)        show_aliases; exit 0;;
-            *)
-                if [[ -f ${arg} ]]; then def_files+=" ${arg}"
-                elif [[ -d ${arg} ]]; then def_files+=" ${arg}/*.def"
-                else
-                    echo unknown argument ${arg}, should be a command, file or directory with one \*.def file
-                    show_help
-                    exit 1
-                fi
-        esac
-        shift
-    done
-    verbose command $(basename $0) ${parsed_args[@]}
-    if [[ -z $envs ]]; then envs=${RENDER_DEFAULT_ENVS:-tst}; fi
-    envs=${envs//,/ }  # split on comma
-    # better test that also works with one or more spaces, might be:
-    #   if [[ ${envs:-} =~ '^ *$' ]]; then ...
-    # see https://unix.stackexchange.com/questions/146942/how-can-i-test-if-a-variable-is-empty-or-contains-only-spaces
-}
-
-################################################
-# run actions
-
-forall-appenvs() {
-    for def_file in $def_files; do
-        for env in $envs; do
-            run_actions
-        done
-    done
-}
-forall-envapps() {
-    for env in $envs; do
-        for f in $def_files; do
-            run_actions
-        done
-    done
-}
-
-run_actions() {
-    renderer=""
-    skip=false
-    source ${def_file}
-    init_renderer_${renderer}
-    output_dir="${target_dir}/${env}/${appname}"
-    if ${skip}; then
-        info skipping $appname $env
-        return 0
-    fi
-    for action in ${action_list//,/ }; do
-        info running $action with ${output_dir} for ${env} ${appname}
-        run_action_$action;
-    done
-}
-
-run_action_update() {
-    for up in ${updates[@]}; do
-        verbose applying update "$up"
-        apply_update_$renderer "$up"
-    done
-}
-
-run_action_render() {
-    $render_func
- }
-
-
-run_action_compare() {
-    olddir=${output_dir}
-    local newdir=${compare_dir}/${env}/${appname}
-
-    if ${clean_before_compare:-true}; then
-        verbose_cmd mkdir -p tmp/$(dirname $newdir)
-        verbose_cmd cp -r $newdir tmp/$(dirname $newdir)
-        newdir=tmp/${newdir}
-        pre_diff_cleanup $newdir $olddir
-    fi
-    info diffing $newdir $olddir
-    verbose_cmd diff -r $newdir $olddir || true
-}
-
-basic_cleanup () {
-    verbose removing comments
-    sed -i -e '/^ *#/d' $1/*.yaml $2/*.yaml
-    verbose removing quotes around values starting or ennding with text
-    sed -i -e 's/: "\([a-zA-Z].*\)"$/: \1/' $1/*.yaml $2/*.yaml
-    sed -i -e 's/: "\([a-zA-Z0-9].*[a-zA-Z]\)"$/: \1/' $1/*.yaml $2/*.yaml
-}
-
-pre_diff_cleanup() {
-    basic_cleanup $1 $2
-}
-
-split_into_files() {
-    yq -s \"$output_dir/\"'+ (.kind | downcase) + "_" + .metadata.name + ".yaml"'
-    rm -f ${output_dir}/_.yaml
-}
-
-###########    helm_chart_dir=helm/charts
 
 main "${@}"

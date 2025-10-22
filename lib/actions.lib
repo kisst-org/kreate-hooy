@@ -1,0 +1,45 @@
+#####################################
+# actions module
+
+run_action_update() {
+    for up in ${updates[@]}; do
+        verbose applying update "$up"
+        apply_update_$renderer "$up"
+    done
+}
+
+run_action_render() {
+    $render_func
+ }
+
+
+run_action_compare() {
+    olddir=${output_dir}
+    local newdir=${compare_dir}/${env}/${appname}
+
+    if ${clean_before_compare:-true}; then
+        verbose_cmd mkdir -p tmp/$(dirname $newdir)
+        verbose_cmd cp -r $newdir tmp/$(dirname $newdir)
+        newdir=tmp/${newdir}
+        pre_diff_cleanup $newdir $olddir
+    fi
+    info diffing $newdir $olddir
+    verbose_cmd diff -r $newdir $olddir || true
+}
+
+basic_cleanup () {
+    verbose removing comments
+    sed -i -e '/^ *#/d' $1/*.yaml $2/*.yaml
+    verbose removing quotes around values starting or ennding with text
+    sed -i -e 's/: "\([a-zA-Z].*\)"$/: \1/' $1/*.yaml $2/*.yaml
+    sed -i -e 's/: "\([a-zA-Z0-9].*[a-zA-Z]\)"$/: \1/' $1/*.yaml $2/*.yaml
+}
+
+pre_diff_cleanup() {
+    basic_cleanup $1 $2
+}
+
+split_into_files() {
+    yq -s \"$output_dir/\"'+ (.kind | downcase) + "_" + .metadata.name + ".yaml"'
+    rm -f ${output_dir}/_.yaml
+}
