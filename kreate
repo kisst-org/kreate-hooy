@@ -24,6 +24,7 @@ read_config() {
     default_renderer=${RENDER_DEFAULT_RENDERER:-helm}
 }
 
+verbose() { true; }  # dummy function, until logging module is loaded
 load_module() {
     file="$1"
     shift
@@ -34,7 +35,7 @@ load_module() {
     module_files["${file}"]=loaded
     local filename="$(basename "${file}")"
     local module="${filename%%.lib}"
-    [[ "${module}" != logging ]] && verbose loading module "${module}" from "${file}"
+    verbose loading module "${module}" from "${file}"
     source "${file}"
     # LC_ALL=C is maybe needed, see: https://stackoverflow.com/questions/85880/determine-if-a-function-exists-in-bash
     if [[ $(type -t init_module_$module) == function ]]; then
