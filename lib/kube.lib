@@ -1,0 +1,20 @@
+#####################################
+# kube module
+
+
+init_module_kube() {
+    declare -Ag kubectl_options
+}
+
+run_action_kube-diff() {
+    if ${log_verbose:-false}; then
+        verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir || true
+    else
+        verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir | grep -E '^[+-]' || true
+    fi
+}
+
+run_action_kube-apply() {
+    info applying $output_dir
+    verbose_cmd kubectl apply ${kubectl_options[$env]} -f $output_dir
+}

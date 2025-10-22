@@ -1,0 +1,45 @@
+#####################################
+# helm module
+
+
+init_renderer_helm() {
+    helm_chart_dir=helm/charts
+    def_file_dir=$(dirname ${def_file})
+    main_env_file="$def_file_dir/values-${appname}-${env}.yaml"
+    if [[ ! -f $main_env_file ]]; then
+        skip=true
+        return 0
+    fi
+    helm_value_files=(helm/env-value-files/values-env-${env}.yaml)
+    helm_value_files+=("$def_file_dir/values-app-${appname}.yaml")
+    helm_value_files+=("$main_env_file")
+    #run_update_func=update_last_helm_values_file
+    render_func=render_helm
+    helm_command="helm template"
+}
+
+render_helm() {
+    helm_release=$appname # this is probably not really used with helm template
+    local f
+    for f in ${helm_value_files[@]}; do helm_command+=" -f ${f}"; done
+    helm_command+=" $helm_release"
+    verbose_cmd rm -rf ${output_dir}
+    for ch in $helm_charts; do
+        local cmd="$helm_command $helm_chart_dir/$ch"
+        verbose "    $cmd"
+        $cmd | split_into_files
+    done
+}
+
+apply_update_helm() {
+    local f=${helm_value_files[-1]}
+    verbose applying update "$1" to "$f"
+    case "$1" in
+        yq:*)
+            local expr="${1#yq:}"
+            expr=${expr//=/=\"}\"  # add quotes around =...
+            verbose_cmd yq -i "${expr}" "$f"
+        ;;
+        *)       echo unknown update "$1"; exit 1;;
+    esac
+}

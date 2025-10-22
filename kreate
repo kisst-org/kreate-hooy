@@ -24,11 +24,42 @@ read_config() {
     default_renderer=${RENDER_DEFAULT_RENDERER:-helm}
 }
 
+load_module() {
+    file="$1"
+    shift
+    if [[ ${module_files["${file}"]:-} == loaded ]]; then
+        verbose skipping module file "${file}" already loaded
+        return 0
+    fi
+    module_files["${file}"]=loaded
+    local filename="$(basename "${file}")"
+    local module="${filename%%.lib}"
+    [[ "${module}" != logging ]] && verbose loading module "${module}" from "${file}"
+    source "${file}"
+    # LC_ALL=C is maybe needed, see: https://stackoverflow.com/questions/85880/determine-if-a-function-exists-in-bash
+    if [[ $(type -t init_module_$module) == function ]]; then
+        verbose running init module for "${module}"
+        init_module_$module "$@"
+    fi
+    modules+=" ${module}"
+}
+
+load_modules() {
+    for file in "$@"; do
+        load_module $file
+    done
+}
+
 main() {
+    declare -g modules=""
+    declare -gA module_files=()
+
+    lib_dir="$(dirname $(readlink -f ${BASH_SOURCE[0]}))/lib"
+    load_module "${lib_dir}"/logging.lib "${@}"
+    parse_loglevel "${@}"
     local action_list=render
-    declare -A aliases
-    declare -A kubectl_options
-    declare -A action_funcs
+    declare -Ag aliases
+    load_modules "${lib_dir}"/*.lib
     def_files=""
     envs=""
     local target_dir=tmp/manifests
@@ -39,16 +70,6 @@ main() {
     parse_options
     forall-appenvs
 }
-
-verbose() { if ${log_verbose:-false}; then printf "%s " "${@}"; echo; fi }
-info()    { if ${log_info:-true};     then echo "${@}"; fi }
-verbose_cmd() {
-    if ${log_verbose:-false}; then printf "    "; echo "${@}"; fi
-    cmd=$1; shift
-    $cmd "${@}"
-}
-get_lhs() { echo ${1/=*([^=])/}; }  # get the lhs (left hand side) from lhs=rhs
-get_rhs() { echo ${1/*([^=])=/}; }  # get the rhs (right hand side) from lhs=rhs
 
 replace_aliases() {
     for arg in "${@}"; do
@@ -100,40 +121,6 @@ parse_options() {
     # see https://unix.stackexchange.com/questions/146942/how-can-i-test-if-a-variable-is-empty-or-contains-only-spaces
 }
 
-
-show_help() { cat <<EOF
-$(basename ${script_name}) [ option | commands | render-def ]...
-
-Options:
-  -h|--help     show this help
-  -v|--verbose  give more output
-  -q|--quiet    no output
-  env:<e>       add environment <e> to render (can be comma separated list)
-  to:<path>     other path to render to (default is tmp/manifests)
-Commands
-  help          show this _help
-  aliases       show all defines aliases
-  diff          run 'kubectl diff' with the rendered manifests
-  apply         run 'kubectl apply' with the rendered manifests
-  compare:<to>  compare to same in other manifests directory
-  update <expr> update some expression
-  update:<expr> <value> update some expression with some value
-  commit        TODO: run 'git commit' (pull is implied)
-  pull          TODO: run 'git pull' before starting to render, to avoid merge conflicts
-  cmd:<cmd>     run a user defined command
-
-Render Definitions:
-Can either be a file, that will be sourced, or a directory that contains exactly 1 file with a name 'render*.def'.
-EOF
-}
-
-show_aliases() {
-echo Aliases:
-for key in $(printf "%s\n" ${!aliases[@]} | sort); do
-    printf "  %-13s %s\n" $key "${aliases[$key]}"
-done
-}
-
 ################################################
 # run actions
 
@@ -179,18 +166,6 @@ run_action_render() {
     $render_func
  }
 
-run_action_diff() {
-    if ${log_verbose:-false}; then
-        verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir || true
-    else
-        verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir | grep -E '^[+-]' || true
-    fi
-}
-
-run_action_apply() {
-    info applying $output_dir
-    verbose_cmd kubectl apply ${kubectl_options[$env]} -f $output_dir
-}
 
 run_action_compare() {
     olddir=${output_dir}
@@ -224,50 +199,5 @@ split_into_files() {
 }
 
 ###########    helm_chart_dir=helm/charts
-#####################################
-# helm module
-
-
-init_renderer_helm() {
-    helm_chart_dir=helm/charts
-    def_file_dir=$(dirname ${def_file})
-    main_env_file="$def_file_dir/values-${appname}-${env}.yaml"
-    if [[ ! -f $main_env_file ]]; then
-        skip=true
-        return 0
-    fi
-    helm_value_files=(helm/env-value-files/values-env-${env}.yaml)
-    helm_value_files+=("$def_file_dir/values-app-${appname}.yaml")
-    helm_value_files+=("$main_env_file")
-    #run_update_func=update_last_helm_values_file
-    render_func=render_helm
-    helm_command="helm template"
-}
-
-render_helm() {
-    helm_release=$appname # this is probably not really used with helm template
-    local f
-    for f in ${helm_value_files[@]}; do helm_command+=" -f ${f}"; done
-    helm_command+=" $helm_release"
-    verbose_cmd rm -rf ${output_dir}
-    for ch in $helm_charts; do
-        local cmd="$helm_command $helm_chart_dir/$ch"
-        verbose "    $cmd"
-        $cmd | split_into_files
-    done
-}
-
-apply_update_helm() {
-    local f=${helm_value_files[-1]}
-    verbose applying update "$1" to "$f"
-    case "$1" in
-        yq:*)
-            local expr="${1#yq:}"
-            expr=${expr//=/=\"}\"  # add quotes around =...
-            verbose_cmd yq -i "${expr}" "$f"
-        ;;
-        *)       echo unknown update "$1"; exit 1;;
-    esac
-}
 
 main "${@}"

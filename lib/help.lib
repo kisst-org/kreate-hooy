@@ -1,0 +1,35 @@
+#####################################
+# help module
+
+show_help() { cat <<EOF
+$(basename ${script_name}) [ option | commands | render-def ]...
+
+Options:
+  -h|--help     show this help
+  -v|--verbose  give more output
+  -q|--quiet    no output
+  env:<e>       add environment <e> to render (can be comma separated list)
+  to:<path>     other path to render to (default is tmp/manifests)
+Commands
+  help          show this _help
+  aliases       show all defines aliases
+  diff          run 'kubectl diff' with the rendered manifests
+  apply         run 'kubectl apply' with the rendered manifests
+  compare:<to>  compare to same in other manifests directory
+  update <expr> update some expression
+  update:<expr> <value> update some expression with some value
+  commit        TODO: run 'git commit' (pull is implied)
+  pull          TODO: run 'git pull' before starting to render, to avoid merge conflicts
+  cmd:<cmd>     run a user defined command
+
+Render Definitions:
+Can either be a file, that will be sourced, or a directory that contains exactly 1 file with a name 'render*.def'.
+EOF
+}
+
+show_aliases() {
+echo Aliases:
+for key in $(printf "%s\n" ${!aliases[@]} | sort); do
+    printf "  %-13s %s\n" $key "${aliases[$key]}"
+done
+}
