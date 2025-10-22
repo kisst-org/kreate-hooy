@@ -25,7 +25,7 @@ read_config() {
 }
 
 main() {
-    local action=render
+    local action_list=render
     declare -A aliases
     declare -A kubectl_options
     declare -A action_funcs
@@ -74,12 +74,12 @@ parse_options() {
             --debug)        set -x;;
             to:*)           target_dir="${arg#to:}";;
             env:*)          envs+=" ${arg#env:}";;
-            cmd:*)          action="${arg#cmd:}";;
+            cmd:*)          action_list="${arg#cmd:}";;
             update)         updates+=("\"$2\""); shift;;
             update:*)       updates+=("${arg#update:}=$2"); shift ;;
-            diff)           action=diff;;
-            apply)          action=apply;;
-            compare:*)      action=compare; compare_dir=${arg#compare:};;
+            diff)           action_list=update,render,diff;;
+            apply)          action_list=update,render,apply;;
+            compare:*)      action_list=update,render,compare; compare_dir=${arg#compare:};;
             aliases)        show_aliases; exit 0;;
             *)
                 if [[ -f ${arg} ]]; then def_files+=" ${arg}"
@@ -140,20 +140,19 @@ done
 forall-appenvs() {
     for def_file in $def_files; do
         for env in $envs; do
-            run_action
+            run_actions
         done
     done
 }
 forall-envapps() {
     for env in $envs; do
         for f in $def_files; do
-            run_action
+            run_actions
         done
     done
 }
 
-run_action() {
-    verbose reading def ${def_file} for ${env} with ${action}
+run_actions() {
     renderer=""
     skip=false
     source ${def_file}
@@ -163,13 +162,13 @@ run_action() {
         info skipping $appname $env
         return 0
     fi
-    info running $action for ${env} ${appname} to ${output_dir}
-    run_updates
-    $render_func
-    run_action_$action;
+    for action in ${action_list//,/ }; do
+        info running $action with ${output_dir} for ${env} ${appname}
+        run_action_$action;
+    done
 }
 
-run_updates() {
+run_action_update() {
     for up in ${updates[@]}; do
         verbose applying update "$up"
         apply_update_$renderer "$up"
@@ -177,11 +176,10 @@ run_updates() {
 }
 
 run_action_render() {
-   verbose rendered all files to "${output_dir}"
+    $render_func
  }
 
 run_action_diff() {
-    info diffing $output_dir
     if ${log_verbose:-false}; then
         verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir || true
     else
