@@ -3,6 +3,15 @@ init_module_logging() {
     parse_loglevel "$@"
 }
 
+parse_args_logging() {
+    local result=0
+    case "$1" in
+        -v|--verbose)   log_verbose=true;  log_info=true;  result=1;;
+        -q|--quiet)     log_verbose=false; log_info=false; result=1;;
+    esac
+    echo $result
+}
+
 verbose() { if ${log_verbose:-false}; then printf "%s " "${@}"; echo; fi }
 info()    { if ${log_info:-true};     then echo "${@}"; fi }
 verbose_cmd() {
@@ -11,12 +20,10 @@ verbose_cmd() {
     $cmd "${@}"
 }
 
+
+
 parse_loglevel() {
-    while [[ $# > 0 ]]; do
-        case $1 in
-            -v|--verbose)   log_verbose=true; log_info=true;;
-            -q|--quiet)     log_verbose=false; log_info=false;;
-        esac
-        shift
+    for arg in "$@"; do
+        parse_args_logging "${arg}" >/dev/null
     done
 }
