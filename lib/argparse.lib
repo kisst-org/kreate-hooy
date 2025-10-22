@@ -9,6 +9,10 @@ init_module_argparse() {
     declare -g envs=""
     declare -g target_dir=tmp/manifests
     declare -ga updates=()
+
+    aliases[diff]=run:update,render,diff
+    aliases[apply]=run:update,render,apply
+    # aliases[compare]=run:update,render,compare   # TODO find mechanism for compare_dir
 }
 
 replace_aliases() {
@@ -36,11 +40,10 @@ parse_options() {
             --debug)        set -x;;
             to:*)           target_dir="${arg#to:}";;
             env:*)          envs+=" ${arg#env:}";;
-            cmd:*)          action_list="${arg#cmd:}";;
+            cmd:*)          action_list="${arg#cmd:}";;  # TODO: deprecated
+            run:*)          action_list="${arg#run:}";;
             update)         updates+=("\"$2\""); shift;;
             update:*)       updates+=("${arg#update:}=$2"); shift ;;
-            diff)           action_list=update,render,diff;;
-            apply)          action_list=update,render,apply;;
             compare:*)      action_list=update,render,compare; compare_dir=${arg#compare:};;
             aliases)        show_aliases; exit 0;;
             *)

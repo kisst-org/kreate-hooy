@@ -3,7 +3,7 @@
 
 
 init_module_action-list() {
-    declare -g action_list=render
+    declare -g action_list=update,render
 }
 
 ################################################
