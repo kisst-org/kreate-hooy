@@ -54,20 +54,13 @@ load_modules() {
 main() {
     declare -g modules=""
     declare -gA module_files=()
-
     lib_dir="$(dirname $(readlink -f ${BASH_SOURCE[0]}))/lib"
     load_module "${lib_dir}"/logging.lib "${@}"
     load_modules "${lib_dir}"/*.lib
-    def_files=""
-    envs=""
-    local target_dir=tmp/manifests
-    declare -a updates=()
     read_config
-    replace_aliases "${@}"
-    parse_options
+    parse_options "${@}"
     forall-appenvs
 }
-
 
 
 main "${@}"

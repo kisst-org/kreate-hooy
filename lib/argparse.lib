@@ -2,8 +2,13 @@
 # argparse module
 
 init_module_argparse() {
-    declare -Ag aliases
-    declare -ag parsed_args=()
+    declare -gA aliases
+    declare -ga parsed_args=()
+
+    declare -g def_files=""
+    declare -g envs=""
+    declare -g target_dir=tmp/manifests
+    declare -ga updates=()
 }
 
 replace_aliases() {
@@ -20,6 +25,7 @@ replace_aliases() {
 
 parse_options() {
     local replaced=false
+    replace_aliases "${@}"
     set -- "${parsed_args[@]}"
     while [[ $# > 0 ]]; do
         arg=$1
