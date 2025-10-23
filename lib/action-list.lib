@@ -4,6 +4,7 @@
 
 init_module_action-list() {
     declare -g action_list=update,render
+    declare -gA enabled=()
 }
 
 ################################################
@@ -35,7 +36,9 @@ run_actions() {
         return 0
     fi
     for action in ${action_list//,/ }; do
-        info running $action with ${output_dir} for ${env} ${appname}
-        run_action_$action;
+        if "${enabled[$action]:-true}"; then
+            info running $action with ${output_dir} for ${env} ${appname}
+            run_action_$action;
+        fi
     done
 }
