@@ -23,8 +23,10 @@ render_helm() {
     local f
     for f in ${helm_value_files[@]}; do helm_command+=" -f ${f}"; done
     helm_command+=" $helm_release"
+    used_files="${helm_value_files[@]}"
     verbose_cmd rm -rf ${output_dir}
     for ch in $helm_charts; do
+        used_files+=" $helm_chart_dir/$ch"
         local cmd="$helm_command $helm_chart_dir/$ch"
         verbose "    $cmd"
         $cmd | split_into_files
