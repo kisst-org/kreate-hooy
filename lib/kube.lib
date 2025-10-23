@@ -10,7 +10,7 @@ run_action_kube-diff() {
     if ${log_verbose:-false}; then
         verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir || true
     else
-        verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir | grep -E '^[+-]' || true
+        verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir | grep -E '^[+-] |^---' || true
     fi
 }
 
