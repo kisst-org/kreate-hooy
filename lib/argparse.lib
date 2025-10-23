@@ -20,7 +20,7 @@ replace_aliases() {
         local al="${aliases[$arg]:-none}"
         if [[ "$al" != none ]]; then
             replaced=true
-            parsed_args+=("$al")
+            parsed_args+=($al)
         else
             parsed_args+=("$arg")
         fi
@@ -38,7 +38,7 @@ parse_options() {
             #-v|--verbose)   log_verbose=true; log_info=true;;
             #-q|--quiet)     log_verbose=false; log_info=false;;
             --debug)        set -x;;
-            to:*)           target_dir="${arg#to:}";;
+            to:*)           target_dir="${arg##to:}";;
             env:*)          envs+=" ${arg#env:}";;
             cmd:*)          action_list="${arg#cmd:}";;  # TODO: deprecated
             run:*)          action_list="${arg#run:}";;
