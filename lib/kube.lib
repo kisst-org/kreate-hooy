@@ -18,3 +18,16 @@ run_action_kube-apply() {
     info applying $output_dir
     verbose_cmd kubectl apply ${kubectl_options[$env]} -f $output_dir
 }
+
+split_kubectl_output_into_files() {
+    yq  '.items.[]' -s \"$output_dir/\"'+ (.kind | downcase) + "_" + .metadata.name + ".yaml"'
+}
+
+run_action_kube-get-manifests() {
+    verbose_cmd rm -rf ${output_dir}
+    verbose_cmd mkdir -p ${output_dir}
+    local cmd="kubectl ${kubectl_options[$env]} -n "${namespace}" get deploy,svc,sts,cm,ingress -o yaml"
+    verbose "    $cmd"
+    $cmd | split_kubectl_output_into_files
+    rm -f ${output_dir}/configmap_kube-root-ca.crt.yaml
+}
