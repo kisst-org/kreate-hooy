@@ -10,8 +10,8 @@ init_module_argparse() {
     declare -g target_dir=tmp/manifests
     declare -ga updates=()
 
-    aliases[diff]=run:update,render,diff
-    aliases[apply]=run:update,render,apply
+    aliases[diff]=run:update,render,kube-diff
+    aliases[apply]=run:update,render,kube-apply
     # aliases[compare]=run:update,render,compare   # TODO find mechanism for compare_dir
 }
 
@@ -31,13 +31,14 @@ parse_options() {
     local replaced=false
     replace_aliases "${@}"
     set -- "${parsed_args[@]}"
+    log_level=$log_level_info
     while [[ $# > 0 ]]; do
         arg=$1
         case $arg in
             -h|--help|help) show_help; exit 0;;
-            #-v|--verbose)   log_verbose=true; log_info=true;;
-            #-q|--quiet)     log_verbose=false; log_info=false;;
             --debug)        set -x;;
+            -v|--verbose)   log_level=$log_level_verbose;;
+            -q|--quiet)     log_level=$log_level_warn;     result=1;;
             to:*)           target_dir="${arg##to:}";;
             env:*)          envs+=" ${arg#env:}";;
             cmd:*)          action_list="${arg#cmd:}";;  # TODO: deprecated
@@ -47,7 +48,7 @@ parse_options() {
             compare:*)      action_list=update,render,compare; compare_dir=${arg#compare:};;
             aliases)        show_aliases; exit 0;;
             *)
-                result="$(parse_args_logging "$@")"
+                result=0 # TODO: "$(parse_args_logging "$@")"
                 if [[ "$result" > 0 ]]; then
                     shift $(( "$result" - 1))
                 else

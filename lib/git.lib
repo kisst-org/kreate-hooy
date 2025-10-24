@@ -23,7 +23,7 @@ run_action_git-pull() {
 }
 
 run_action_git-diff() {
-    if ${log_verbose:-false}; then
+    if $(log_is_verbose); then
         verbose_cmd git diff -- ${used_files} ${output_dir} || true
     else
         verbose_cmd git diff -- ${used_files} ${output_dir} | grep -E '^[+-] |^---' || true

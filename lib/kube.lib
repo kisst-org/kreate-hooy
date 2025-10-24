@@ -7,7 +7,7 @@ init_module_kube() {
 }
 
 run_action_kube-diff() {
-    if ${log_verbose:-false}; then
+    if $(log_is_verbose); then
         verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir || true
     else
         verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir | grep -E '^[+-] |^---' || true
