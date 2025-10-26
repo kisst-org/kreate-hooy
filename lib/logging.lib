@@ -9,16 +9,16 @@ init_logging() {
     declare -gi log_level_verbose=40
     declare -gi log_level_debug=50
     declare -gi log_level=$log_level_info
+    declare -g  log_commands=false
     parse_loglevel "$@"
 }
 
 parse_args_logging() {
-    local result=0
     case "$1" in
-        -v|--verbose)   log_level=$log_level_verbose;  result=1;;
-        -q|--quiet)     log_level=$log_level_warn;     result=1;;
+        -v|--verbose)   log_level=$log_level_verbose;  parse_result=1;;
+        -q|--quiet)     log_level=$log_level_warn;     parse_result=1;;
+        -s|--show-cmd)  log_commands=true;             parse_result=1;;
     esac
-    echo $result
 }
 
 log_is_verbose() { (( ${log_level:-30} >= ${log_level_verbose:-40} )) }
@@ -28,7 +28,11 @@ verbose() { if $(log_is_verbose) ; then printf "%s " "${@}"; echo; fi }
 info() {    if $(log_is_info) ;    then printf "%s " "${@}"; echo; fi }
 #info()    { if ${log_info:-true};     then echo "${@}"; fi }
 verbose_cmd() {
-    if (( $log_level >= $log_level_verbose )); then printf "    "; echo "${@}"; fi
+    if (( $log_level >= $log_level_verbose )); then
+        printf "    "; echo "${@}";
+    elif $log_commands; then
+        printf "    "; echo "${@}";
+    fi
     cmd=$1; shift
     $cmd "${@}"
 }

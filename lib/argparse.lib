@@ -37,8 +37,6 @@ parse_options() {
         case $arg in
             -h|--help|help) show_help; exit 0;;
             --debug)        set -x;;
-            -v|--verbose)   log_level=$log_level_verbose;;
-            -q|--quiet)     log_level=$log_level_warn;     result=1;;
             to:*)           target_dir="${arg##to:}";;
             env:*)          envs+=" ${arg#env:}";;
             cmd:*)          action_list="${arg#cmd:}";;  # TODO: deprecated
@@ -48,9 +46,10 @@ parse_options() {
             compare:*)      action_list=update,render,compare; compare_dir=${arg#compare:};;
             aliases)        show_aliases; exit 0;;
             *)
-                result=0 # TODO: "$(parse_args_logging "$@")"
-                if [[ "$result" > 0 ]]; then
-                    shift $(( "$result" - 1))
+                parse_result=0
+                parse_args_logging "$@"
+                if [[ "$parse_result" > 0 ]]; then
+                    shift $(( "$parse_result" - 1))
                 else
                     if [[ -f ${arg} ]]; then def_files+=" ${arg}"
                     elif [[ -d ${arg} ]]; then def_files+=" ${arg}/*.def"
