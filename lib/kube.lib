@@ -3,6 +3,7 @@
 
 
 init_module_kube() {
+    use_module argparse
     declare -Ag kubectl_options
     aliases[kube-get]="run:kube-get-manifests to:deployed/manifests"
 }

@@ -1,5 +1,7 @@
+#####################################
+# logging module
 
-init_module_logging() {
+init_logging() {
     declare -gi log_level_fatal=0
     declare -gi log_level_error=10
     declare -gi log_level_warn=20

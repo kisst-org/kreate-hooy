@@ -2,7 +2,7 @@
 # argparse module
 
 init_module_argparse() {
-    declare -gA aliases
+    declare -gA aliases=()
     declare -ga parsed_args=()
 
     declare -g def_files=""
@@ -63,7 +63,7 @@ parse_options() {
         esac
         shift
     done
-    verbose command $(basename $0) ${parsed_args[@]}
+    verbose COMMAND $(basename $0) ${parsed_args[@]}
     if [[ -z $envs ]]; then envs=${RENDER_DEFAULT_ENVS:-tst}; fi
     envs=${envs//,/ }  # split on comma
     # better test that also works with one or more spaces, might be:

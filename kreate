@@ -2,65 +2,30 @@
 # Script Name: render-manifests
 # Description: render helm manifests for applications and environments
 # Author: Mark Hooijkaas
-# Sourcecode: https://github.com/kisst-org/markisst/
+# Sourcecode: https://github.com/kisst-org/kreate-hooy/
 # License: Apache License version 2.0
 # Install or update to newest version with following command:
-#   curl -OL https://raw.githubusercontent.com/kisst-org/markisst/refs/heads/main/render-manifests && chmod 755 render-manifests
+#   curl -OL https://raw.githubusercontent.com/kisst-org/kreate-hooy/refs/heads/main/kreate && chmod 755 kreate
 
 set -eu
 shopt -s extglob
 script_name="${0}"
 
-read_config() {
-    : ${RENDER_CONFIG_FILE:=~/.config/kreate-hooy/config}
-    if [[ -f ${RENDER_CONFIG_FILE} ]]; then
-        source ${RENDER_CONFIG_FILE}
-    fi
-    if [[ -d config.d ]] && "${use_config_d:-true}"; then
-        for inc in config.d/*.config; do
-            source $inc
+source_files_from_lib() {
+    if ${load_modules_from_lib:-true}; then
+        for file in lib/*.lib; do
+            source $file
         done
     fi
-    default_renderer=${RENDER_DEFAULT_RENDERER:-helm}
-}
-
-verbose() { true; }  # dummy function, until logging module is loaded
-load_module() {
-    file="$1"
-    shift
-    if [[ ${module_files["${file}"]:-} == loaded ]]; then
-        verbose skipping module file "${file}" already loaded
-        return 0
-    fi
-    module_files["${file}"]=loaded
-    local filename="$(basename "${file}")"
-    local module="${filename%%.lib}"
-    verbose loading module "${module}" from "${file}"
-    source "${file}"
-    # LC_ALL=C is maybe needed, see: https://stackoverflow.com/questions/85880/determine-if-a-function-exists-in-bash
-    if [[ $(type -t init_module_$module) == function ]]; then
-        verbose running init module for "${module}"
-        init_module_$module "$@"
-    fi
-    modules+=" ${module}"
-}
-
-load_modules() {
-    for file in "$@"; do
-        load_module $file
-    done
 }
 
 main() {
-    declare -g modules=""
-    declare -gA module_files=()
-    lib_dir="$(dirname $(readlink -f ${BASH_SOURCE[0]}))/lib"
-    load_module "${lib_dir}"/logging.lib "${@}"
-    load_modules "${lib_dir}"/*.lib
-    read_config
+    source_files_from_lib
+    init_logging "${@}"
+    init_all_modules
+    #read_config
     parse_options "${@}"
     forall-appenvs
 }
-
 
 main "${@}"

@@ -3,6 +3,7 @@
 
 
 init_module_git() {
+    use_module argparse
     declare -g used_files=""
     aliases[deploy]="run:git-pull,update,render,kube-diff,git-diff,ask,git-add,git-commit to:deployed/manifests"
     declare -g git_pulled=false
