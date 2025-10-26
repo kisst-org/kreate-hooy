@@ -1,0 +1,9 @@
+#!/bin/env bash
+
+dir=$(dirname $(dirname ${BASH_SOURCE[0]}))
+
+file="${1:-kreate}"
+sed -e '/^main "${@}"/d' -e '/^[ ]*source_files_from_lib$/d' "$dir"/main-kreate >"$file"
+cat "$dir"/lib/*.lib >>"$file"
+printf '\n##################\nmain "${@}"\n' >>"$file"
+chmod 755 "$file"
