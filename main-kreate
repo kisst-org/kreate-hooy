@@ -12,8 +12,9 @@ shopt -s extglob
 script_name="${0}"
 
 source_files_from_lib() {
+    dir=$(dirname $(readlink -f ${BASH_SOURCE[0]}))/lib
     if ${load_modules_from_lib:-true}; then
-        for file in lib/*.lib; do
+        for file in $dir/*.lib; do
             source $file
         done
     fi
@@ -23,7 +24,7 @@ main() {
     source_files_from_lib
     init_logging "${@}"
     init_all_modules
-    #read_config
+    read_config
     parse_options "${@}"
     forall-appenvs
 }
