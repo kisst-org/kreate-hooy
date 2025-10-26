@@ -37,6 +37,9 @@ parse_options() {
         case $arg in
             -h|--help|help) show_help; exit 0;;
             --debug)        set -x;;
+            -e|--env)       envs+=" $2";        shift;;
+            -r|--run)       action_list="$2";   shift;;
+            --to)           target_dir="$2";    shift;;
             to:*)           target_dir="${arg##to:}";;
             env:*)          envs+=" ${arg#env:}";;
             cmd:*)          action_list="${arg#cmd:}";;  # TODO: deprecated

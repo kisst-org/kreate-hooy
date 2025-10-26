@@ -2,14 +2,16 @@
 # help module
 
 show_help() { cat <<EOF
-$(basename ${script_name}) [ option | commands | render-def ]...
+$(basename ${script_name}) [ option | render-def ]...
 
 Options:
   -h|--help     show this help
   -v|--verbose  give more output
+  -s|--show-cmd show the commands being executed
   -q|--quiet    no output
-  env:<e>       add environment <e> to render (can be comma separated list)
-  to:<path>     other path to render to (default is tmp/manifests)
+  -e|--env <e>  add environment <e> to render (can be comma separated list)
+  --run <act>   run a list of actions for each app/env combination
+  --to <path>   other path to render to (default is tmp/manifests)
 Commands
   help          show this _help
   aliases       show all defines aliases
@@ -24,6 +26,8 @@ Commands
 
 Render Definitions:
 Can either be a file, that will be sourced, or a directory that contains exactly 1 file with a name 'render*.def'.
+
+Note: options end render-definitions can be freely mixed
 EOF
 }
 

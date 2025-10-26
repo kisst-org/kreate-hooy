@@ -11,18 +11,11 @@ set -eu
 shopt -s extglob
 script_name="${0}"
 
-source_files_from_lib() {
-    if ${load_modules_from_lib:-true}; then
-        for file in lib/*.lib; do
-            source $file
-        done
-    fi
-}
 
 main() {
     init_logging "${@}"
     init_all_modules
-    #read_config
+    read_config
     parse_options "${@}"
     forall-appenvs
 }
@@ -155,8 +148,9 @@ parse_options() {
         case $arg in
             -h|--help|help) show_help; exit 0;;
             --debug)        set -x;;
-            -v|--verbose)   log_level=$log_level_verbose;;
-            -q|--quiet)     log_level=$log_level_warn;     result=1;;
+            -e|--env)       envs+=" $2";        shift;;
+            -r|--run)       action_list="$2";   shift;;
+            --to)           target_dir="$2";    shift;;
             to:*)           target_dir="${arg##to:}";;
             env:*)          envs+=" ${arg#env:}";;
             cmd:*)          action_list="${arg#cmd:}";;  # TODO: deprecated
@@ -166,9 +160,10 @@ parse_options() {
             compare:*)      action_list=update,render,compare; compare_dir=${arg#compare:};;
             aliases)        show_aliases; exit 0;;
             *)
-                result=0 # TODO: "$(parse_args_logging "$@")"
-                if [[ "$result" > 0 ]]; then
-                    shift $(( "$result" - 1))
+                parse_result=0
+                parse_args_logging "$@"
+                if [[ "$parse_result" > 0 ]]; then
+                    shift $(( "$parse_result" - 1))
                 else
                     if [[ -f ${arg} ]]; then def_files+=" ${arg}"
                     elif [[ -d ${arg} ]]; then def_files+=" ${arg}/*.def"
@@ -319,14 +314,16 @@ apply_update_helm() {
 # help module
 
 show_help() { cat <<EOF
-$(basename ${script_name}) [ option | commands | render-def ]...
+$(basename ${script_name}) [ option | render-def ]...
 
 Options:
   -h|--help     show this help
   -v|--verbose  give more output
+  -s|--show-cmd show the commands being executed
   -q|--quiet    no output
-  env:<e>       add environment <e> to render (can be comma separated list)
-  to:<path>     other path to render to (default is tmp/manifests)
+  -e|--env <e>  add environment <e> to render (can be comma separated list)
+  --run <act>   run a list of actions for each app/env combination
+  --to <path>   other path to render to (default is tmp/manifests)
 Commands
   help          show this _help
   aliases       show all defines aliases
@@ -341,6 +338,8 @@ Commands
 
 Render Definitions:
 Can either be a file, that will be sourced, or a directory that contains exactly 1 file with a name 'render*.def'.
+
+Note: options end render-definitions can be freely mixed
 EOF
 }
 
@@ -408,16 +407,16 @@ init_logging() {
     declare -gi log_level_verbose=40
     declare -gi log_level_debug=50
     declare -gi log_level=$log_level_info
+    declare -g  log_commands=false
     parse_loglevel "$@"
 }
 
 parse_args_logging() {
-    local result=0
     case "$1" in
-        -v|--verbose)   log_level=$log_level_verbose;  result=1;;
-        -q|--quiet)     log_level=$log_level_warn;     result=1;;
+        -v|--verbose)   log_level=$log_level_verbose;  parse_result=1;;
+        -q|--quiet)     log_level=$log_level_warn;     parse_result=1;;
+        -s|--show-cmd)  log_commands=true;             parse_result=1;;
     esac
-    echo $result
 }
 
 log_is_verbose() { (( ${log_level:-30} >= ${log_level_verbose:-40} )) }
@@ -427,7 +426,11 @@ verbose() { if $(log_is_verbose) ; then printf "%s " "${@}"; echo; fi }
 info() {    if $(log_is_info) ;    then printf "%s " "${@}"; echo; fi }
 #info()    { if ${log_info:-true};     then echo "${@}"; fi }
 verbose_cmd() {
-    if (( $log_level >= $log_level_verbose )); then printf "    "; echo "${@}"; fi
+    if (( $log_level >= $log_level_verbose )); then
+        printf "    "; echo "${@}";
+    elif $log_commands; then
+        printf "    "; echo "${@}";
+    fi
     cmd=$1; shift
     $cmd "${@}"
 }
@@ -473,4 +476,6 @@ init_all_modules() {
         use_module $m
     done
 }
+
+##################
 main "${@}"
