@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+
+version=$1
+
+dir="${2:-opt}/kreate-hooy/${version}"
+file="kreate-hooy-${version}.tar.gz"
+url="https://github.com/kisst-org/kreate-hooy/releases/download/${version}/${file}"
+
+mkdir -p "${dir}"
+curl -L  "${url}" | tar xvz -C "${dir}"
+cd bin
+ln -sf "../${dir}"/kreate .
