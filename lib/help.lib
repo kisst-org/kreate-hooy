@@ -31,7 +31,7 @@ Note: options end render-definitions can be freely mixed
 EOF
 }
 
-show_aliases() {
+run_command_aliases() {
 echo Aliases:
 for key in $(printf "%s\n" ${!aliases[@]} | sort); do
     printf "  %-13s %s\n" $key "${aliases[$key]}"

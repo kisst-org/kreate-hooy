@@ -9,10 +9,15 @@ init_module_argparse() {
     declare -g envs=""
     declare -g target_dir=tmp/manifests
     declare -ga updates=()
+    declare -gA command_help=()
+    declare -g command=run_command_render
 
-    aliases[diff]=run:update,render,kube-diff
-    aliases[apply]=run:update,render,kube-apply
+    add_command aliases "show all defined aliases"
     # aliases[compare]=run:update,render,compare   # TODO find mechanism for compare_dir
+}
+
+add_command() {
+    command_help["$1"]="${2:-no help sepcfied}"
 }
 
 replace_aliases() {
@@ -40,21 +45,16 @@ parse_options() {
             -e|--env)       envs+=" $2";        shift;;
             -r|--run)       action_list="$2";   shift;;
             --to)           target_dir="$2";    shift;;
-            to:*)           target_dir="${arg##to:}";;
-            env:*)          envs+=" ${arg#env:}";;
-            cmd:*)          action_list="${arg#cmd:}";;  # TODO: deprecated
-            run:*)          action_list="${arg#run:}";;
-            update)         updates+=("\"$2\""); shift;;
-            update:*)       updates+=("${arg#update:}=$2"); shift ;;
-            compare:*)      action_list=update,render,compare; compare_dir=${arg#compare:};;
-            aliases)        show_aliases; exit 0;;
+            --update)       updates+=("\"$2\"");shift;;
             *)
                 parse_result=0
                 parse_args_logging "$@"
                 if [[ "$parse_result" > 0 ]]; then
                     shift $(( "$parse_result" - 1))
                 else
-                    if [[ -f ${arg} ]]; then def_files+=" ${arg}"
+                    if [[ "${command_help["$arg"]:-none}" != none  ]]; then
+                        command="run_command_$arg"
+                    elif [[ -f ${arg} ]]; then def_files+=" ${arg}"
                     elif [[ -d ${arg} ]]; then def_files+=" ${arg}/*.def"
                     else
                         echo unknown argument ${arg}, should be a command, file or directory with one \*.def file

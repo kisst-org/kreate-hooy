@@ -1,12 +1,18 @@
 #####################################
 # kube module
 
-
 init_module_kube() {
     use_module argparse
     declare -Ag kubectl_options
-    aliases[kube-get]="run:kube-get-manifests to:deployed/manifests"
+    add_command kube-get "get current manifests from cluster to --to <path> (default) deployed/manifests"
+    add_command kube-apply "apply rendered manifests with cluster (kubectl apply)"
+    add_command kube-diff "compare rendered manifests with cluster (kubectl diff)"
 }
+
+run_command_kube-get() { forall-appenvs kube-get-manifests; }
+run_command_kube-diff() { forall-appenvs update,render,kube-diff; }
+run_command_kube-apply() { forall-appenvs update,render,kube-diff,kube-apply; }
+
 
 run_action_kube-diff() {
     if $(log_is_verbose); then

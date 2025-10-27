@@ -13,14 +13,14 @@ init_module_action-list() {
 forall-appenvs() {
     for def_file in $def_files; do
         for env in $envs; do
-            run_actions
+            run_actions "$@"
         done
     done
 }
 forall-envapps() {
     for env in $envs; do
         for f in $def_files; do
-            run_actions
+            run_actions "$@"
         done
     done
 }
@@ -28,6 +28,7 @@ forall-envapps() {
 run_actions() {
     renderer=""
     skip=false
+    action_list="$@"
     source ${def_file}
     init_renderer_${renderer}
     output_dir="${target_dir}/${env}/${appname}"

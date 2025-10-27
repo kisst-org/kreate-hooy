@@ -26,7 +26,7 @@ main() {
     init_all_modules
     read_config
     parse_options "${@}"
-    forall-appenvs
+    $command
 }
 
 main "${@}"
