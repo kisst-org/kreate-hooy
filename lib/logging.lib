@@ -24,8 +24,8 @@ parse_args_logging() {
 log_is_verbose() { (( ${log_level:-30} >= ${log_level_verbose:-40} )) }
 log_is_info()    { (( $log_level >= $log_level_info )) }
 
-verbose() { if $(log_is_verbose) ; then printf "%s " "${@}"; echo; fi }
-info() {    if $(log_is_info) ;    then printf "%s " "${@}"; echo; fi }
+verbose() { if $(log_is_verbose) ; then printf "## "; printf "%s " "${@}"; echo; fi }
+info() {    if $(log_is_info) ;    then printf "# ";  printf "%s " "${@}"; echo; fi }
 #info()    { if ${log_info:-true};     then echo "${@}"; fi }
 verbose_cmd() {
     if (( $log_level >= $log_level_verbose )); then
