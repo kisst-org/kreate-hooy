@@ -17,7 +17,7 @@ main() {
     init_all_modules
     read_config
     parse_options "${@}"
-    forall-appenvs
+    $command
 }
 
 #####################################
@@ -35,14 +35,14 @@ init_module_action-list() {
 forall-appenvs() {
     for def_file in $def_files; do
         for env in $envs; do
-            run_actions
+            run_actions "$@"
         done
     done
 }
 forall-envapps() {
     for env in $envs; do
         for f in $def_files; do
-            run_actions
+            run_actions "$@"
         done
     done
 }
@@ -50,16 +50,17 @@ forall-envapps() {
 run_actions() {
     renderer=""
     skip=false
+    action_list="$@"
     source ${def_file}
     init_renderer_${renderer}
-    output_dir="${target_dir}/${env}/${appname}"
+    output_dir="${to_dir}/${env}/${appname}"
     if ${skip}; then
         info skipping $appname $env
         return 0
     fi
     for action in ${action_list//,/ }; do
         if "${enabled[$action]:-true}"; then
-            info running $action with ${output_dir} for ${env} ${appname}
+            verbose running $action with ${output_dir} for ${env} ${appname}
             run_action_$action;
         fi
     done
@@ -67,7 +68,21 @@ run_actions() {
 #####################################
 # actions module
 
+init_module_actions() {
+    use_module argparse
+    add_command update "update source files with expressions from --update"
+    add_command render "render manifests to --to <path> (default tmp/manifests)"
+    add_command compare "render manifests to --to <path> (default tmp/manifests) and then compare with --with path (default deployed/manifests)"
+}
+
+run_command_update() { forall-appenvs update; }
+run_command_render() { forall-appenvs update,render;}
+run_command_compare() { forall-appenvs update,render,compare;}
+
 run_action_update() {
+    if [[ ${#updates[@]} == 0 ]]; then
+        verbose skipping updates
+    fi
     for up in ${updates[@]}; do
         verbose applying update "$up"
         apply_update_$renderer "$up"
@@ -75,13 +90,15 @@ run_action_update() {
 }
 
 run_action_render() {
+    info rendering  ${env} ${appname} to ${output_dir}
     $render_func
  }
 
 
 run_action_compare() {
     olddir=${output_dir}
-    local newdir=${compare_dir}/${env}/${appname}
+    local newdir=${with_dir:-deployed/manifests}/${env}/${appname}
+    info comparing ${env} ${appname}: ${output_dir} with ${newdir}
 
     if ${clean_before_compare:-true}; then
         verbose_cmd mkdir -p tmp/$(dirname $newdir)
@@ -89,7 +106,6 @@ run_action_compare() {
         newdir=tmp/${newdir}
         pre_diff_cleanup $newdir $olddir
     fi
-    info diffing $newdir $olddir
     verbose_cmd diff -r $newdir $olddir || true
 }
 
@@ -118,12 +134,16 @@ init_module_argparse() {
 
     declare -g def_files=""
     declare -g envs=""
-    declare -g target_dir=tmp/manifests
+    declare -g to_dir=tmp/manifests
     declare -ga updates=()
+    declare -gA command_help=()
+    declare -g command=run_command_render
 
-    aliases[diff]=run:update,render,kube-diff
-    aliases[apply]=run:update,render,kube-apply
-    # aliases[compare]=run:update,render,compare   # TODO find mechanism for compare_dir
+    add_command aliases "show all defined aliases"
+}
+
+add_command() {
+    command_help["$1"]="${2:-no help sepcfied}"
 }
 
 replace_aliases() {
@@ -150,22 +170,18 @@ parse_options() {
             --debug)        set -x;;
             -e|--env)       envs+=" $2";        shift;;
             -r|--run)       action_list="$2";   shift;;
-            --to)           target_dir="$2";    shift;;
-            to:*)           target_dir="${arg##to:}";;
-            env:*)          envs+=" ${arg#env:}";;
-            cmd:*)          action_list="${arg#cmd:}";;  # TODO: deprecated
-            run:*)          action_list="${arg#run:}";;
-            update)         updates+=("\"$2\""); shift;;
-            update:*)       updates+=("${arg#update:}=$2"); shift ;;
-            compare:*)      action_list=update,render,compare; compare_dir=${arg#compare:};;
-            aliases)        show_aliases; exit 0;;
+            --to)           to_dir="$2";    shift;;
+            --with)         with_dir="$2";      shift;;
+            --update)       updates+=("\"$2\"");shift;;
             *)
                 parse_result=0
                 parse_args_logging "$@"
                 if [[ "$parse_result" > 0 ]]; then
                     shift $(( "$parse_result" - 1))
                 else
-                    if [[ -f ${arg} ]]; then def_files+=" ${arg}"
+                    if [[ "${command_help["$arg"]:-none}" != none  ]]; then
+                        command="run_command_$arg"
+                    elif [[ -f ${arg} ]]; then def_files+=" ${arg}"
                     elif [[ -d ${arg} ]]; then def_files+=" ${arg}/*.def"
                     else
                         echo unknown argument ${arg}, should be a command, file or directory with one \*.def file
@@ -227,10 +243,14 @@ init_module_git() {
     declare -g used_files=""
     aliases[deploy]="run:git-pull,update,render,kube-diff,git-diff,ask,git-add,git-commit to:deployed/manifests"
     declare -g git_pulled=false
-    enabled[git-pull]=false
-    enabled[kube-apply]=false
-    enabled[git-commit]=false
+    add_command git-diff "shows the changes to source and rendered manifests with git"
+    add_command git-add "adds the changes to source and rendered manifests to git, for committing"
+    add_command git-commit "commits the changes to source and rendered manifests to git"
 }
+
+run_command_git-diff() { forall-appenvs update,render,git-diff; }
+run_command_git-add() { forall-appenvs update,render,git-add; }
+run_command_git-commit() { forall-appenvs update,render,git-add,git-commit; }
 
 run_action_ask() {
     local answer
@@ -238,8 +258,6 @@ run_action_ask() {
 }
 
 run_action_git-pull() {
-    if "${git_pulled}"; then return 0; fi
-    git_pulled=true
     verbose_cmd git pull
 }
 
@@ -343,7 +361,7 @@ Note: options end render-definitions can be freely mixed
 EOF
 }
 
-show_aliases() {
+run_command_aliases() {
 echo Aliases:
 for key in $(printf "%s\n" ${!aliases[@]} | sort); do
     printf "  %-13s %s\n" $key "${aliases[$key]}"
@@ -352,12 +370,18 @@ done |sort -k2 -k1
 #####################################
 # kube module
 
-
 init_module_kube() {
     use_module argparse
     declare -Ag kubectl_options
-    aliases[kube-get]="run:kube-get-manifests to:deployed/manifests"
+    add_command kube-get "get current manifests from cluster to --to <path> (default) deployed/manifests"
+    add_command kube-apply "apply rendered manifests with cluster (kubectl apply)"
+    add_command kube-diff "compare rendered manifests with cluster (kubectl diff)"
 }
+
+run_command_kube-get() { forall-appenvs kube-get-manifests; }
+run_command_kube-diff() { forall-appenvs update,render,kube-diff; }
+run_command_kube-apply() { forall-appenvs update,render,kube-diff,kube-apply; }
+
 
 run_action_kube-diff() {
     if $(log_is_verbose); then
@@ -422,8 +446,8 @@ parse_args_logging() {
 log_is_verbose() { (( ${log_level:-30} >= ${log_level_verbose:-40} )) }
 log_is_info()    { (( $log_level >= $log_level_info )) }
 
-verbose() { if $(log_is_verbose) ; then printf "%s " "${@}"; echo; fi }
-info() {    if $(log_is_info) ;    then printf "%s " "${@}"; echo; fi }
+verbose() { if $(log_is_verbose) ; then printf "## "; printf "%s " "${@}"; echo; fi }
+info() {    if $(log_is_info) ;    then printf "# ";  printf "%s " "${@}"; echo; fi }
 #info()    { if ${log_info:-true};     then echo "${@}"; fi }
 verbose_cmd() {
     if (( $log_level >= $log_level_verbose )); then
