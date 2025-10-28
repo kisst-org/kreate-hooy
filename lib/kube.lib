@@ -15,6 +15,7 @@ run_command_kube-apply() { forall-appenvs update,render,kube-diff,kube-apply; }
 
 
 run_action_kube-diff() {
+    info kube-diff ${env} ${appname} to ${output_dir}
     if $(log_is_verbose); then
         verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir || true
     else
@@ -23,7 +24,7 @@ run_action_kube-diff() {
 }
 
 run_action_kube-apply() {
-    info applying $output_dir
+    info kube apply $output_dir
     verbose_cmd kubectl apply ${kubectl_options[$env]} -f $output_dir
 }
 
@@ -32,6 +33,7 @@ split_kubectl_output_into_files() {
 }
 
 run_action_kube-get-manifests() {
+    info kube get manifests  ${env} ${appname} to ${output_dir}
     verbose_cmd rm -rf ${output_dir}
     verbose_cmd mkdir -p ${output_dir}
     local cmd="kubectl ${kubectl_options[$env]} -n "${namespace}" get deploy,svc,sts,cm,ingress -o yaml"
