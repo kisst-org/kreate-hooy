@@ -37,6 +37,18 @@ verbose_cmd() {
     $cmd "${@}"
 }
 
+verbose_pipe() {
+    pipe=$1
+    shift
+    if (( $log_level >= $log_level_verbose )); then
+        printf "    "; echo "${@}" \| $pipe;
+    elif $log_commands; then
+        printf "    "; echo "${@}" \| $pipe;
+    fi
+    cmd=$1; shift
+    $cmd "${@}" | $pipe
+}
+
 
 parse_loglevel() {
     for arg in "$@"; do

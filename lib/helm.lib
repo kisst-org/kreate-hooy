@@ -27,9 +27,7 @@ render_helm() {
     verbose_cmd rm -rf ${output_dir}
     for ch in $helm_charts; do
         used_files+=" $helm_chart_dir/$ch"
-        local cmd="$helm_command $helm_chart_dir/$ch"
-        verbose "    $cmd"
-        $cmd | split_into_files
+        verbose_pipe split_into_files "$helm_command $helm_chart_dir/$ch"
     done
 }
 
@@ -42,6 +40,9 @@ apply_update_helm() {
             expr=${expr//=/=\"}\"  # add quotes around =...
             verbose_cmd yq -i "${expr}" "$f"
         ;;
-        *)       echo unknown update "$1"; exit 1;;
+        *)
+            echo unknown update "$1";
+            exit 1
+        ;;
     esac
 }

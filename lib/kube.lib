@@ -14,12 +14,13 @@ run_command_kube-diff() { forall-appenvs update,render,kube-diff; }
 run_command_kube-apply() { forall-appenvs update,render,kube-diff,kube-apply; }
 
 
+filter-kube-diff-output() { grep -E '^[+-] |^---'; }
 run_action_kube-diff() {
     info kube-diff ${env} ${appname} to ${output_dir}
     if $(log_is_verbose); then
         verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir || true
     else
-        verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir | grep -E '^[+-] |^---' || true
+        verbose_pipe filter-kube-diff-output kubectl diff ${kubectl_options[$env]} -f $output_dir || true
     fi
 }
 
@@ -36,9 +37,7 @@ run_action_kube-get-manifests() {
     info kube get manifests  ${env} ${appname} to ${output_dir}
     verbose_cmd rm -rf ${output_dir}
     verbose_cmd mkdir -p ${output_dir}
-    local cmd="kubectl ${kubectl_options[$env]} -n "${namespace}" get deploy,svc,sts,cm,ingress -o yaml"
-    verbose "    $cmd"
-    $cmd | split_kubectl_output_into_files
+    verbose_pipe split_kubectl_output_into_files kubectl ${kubectl_options[$env]} -n "${namespace}" get deploy,svc,sts,cm,ingress -o yaml
     ignore_files=configmap_kube-root-ca.crt.yaml
     ignore_files+=" deployment_ingress-nginx-controller.yaml"
     ignore_files+=" service_ingress-nginx-controller-admission.yaml"
