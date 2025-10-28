@@ -1,7 +1,7 @@
 #####################################
 # actions module
 
-init_module_actions() {
+init_module_render() {
     use_module argparse
     add_command update "update source files with expressions from --update"
     add_command render "render manifests to --to <path> (default tmp/manifests)"
