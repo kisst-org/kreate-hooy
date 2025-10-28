@@ -42,8 +42,7 @@ parse_options() {
             -h|--help|help) show_help; exit 0;;
             --debug)        set -x;;
             -e|--env)       envs+=" $2";        shift;;
-            -r|--run)       action_list="$2";   shift;;
-            --to)           to_dir="$2";    shift;;
+            --to)           to_dir="$2";        shift;;
             --with)         with_dir="$2";      shift;;
             --update)       updates+=("\"$2\"");shift;;
             *)
