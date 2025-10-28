@@ -5,7 +5,7 @@
 init_renderer_helm() {
     helm_chart_dir=helm/charts
     def_file_dir=$(dirname ${def_file})
-    main_env_file="$def_file_dir/values-${appname}-${env}.yaml"
+    main_env_file="$def_file_dir/${env}/values-${appname}-${env}.yaml"
     if [[ ! -f $main_env_file ]]; then
         skip=true
         return 0

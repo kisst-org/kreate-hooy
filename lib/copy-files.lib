@@ -4,7 +4,7 @@
 
 init_renderer_copy-files() {
     def_file_dir=$(dirname "${def_file}")
-    files_list="$def_file_dir"/files/${env}/*.yaml
+    files_list="$def_file_dir"/${env}/files/*.yaml
     if [[ -z ${files_list} ]]; then
         skip=true
         return 0
