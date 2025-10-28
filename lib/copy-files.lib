@@ -14,6 +14,7 @@ init_renderer_copy-files() {
 
 render_copy-files() {
     verbose_cmd rm -rf ${output_dir}
+    verbose_cmd mkdir -p ${output_dir}
     verbose_cmd cp -f ${files_list} ${output_dir}
 }
 
