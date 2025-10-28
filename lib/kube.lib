@@ -10,12 +10,13 @@ init_module_kube() {
 }
 
 run_command_kube-get() { forall-appenvs kube-get-manifests; }
-run_command_kube-diff() { forall-appenvs update,render,kube-diff; }
-run_command_kube-apply() { forall-appenvs update,render,kube-diff,kube-apply; }
+run_command_kube-diff() { forall-appenvs kube-diff; }
+run_command_kube-apply() { forall-appenvs kube-apply; }
 
 
 filter-kube-diff-output() { grep -E '^[+-] |^---'; }
 run_action_kube-diff() {
+    run_action_render
     info kube-diff ${env} ${appname} to ${output_dir}
     if $(log_is_verbose); then
         verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir || true
@@ -25,6 +26,7 @@ run_action_kube-diff() {
 }
 
 run_action_kube-apply() {
+    run_action_kube-diff
     info kube apply $output_dir
     verbose_cmd kubectl apply ${kubectl_options[$env]} -f $output_dir
 }

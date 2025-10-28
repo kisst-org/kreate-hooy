@@ -12,9 +12,9 @@ init_module_git() {
     add_command git-commit "commits the changes to source and rendered manifests to git"
 }
 
-run_command_git-diff() { forall-appenvs update,render,git-diff; }
-run_command_git-add() { forall-appenvs update,render,git-add; }
-run_command_git-commit() { forall-appenvs update,render,git-add,git-commit; }
+run_command_git-diff() { forall-appenvs git-diff; }
+run_command_git-add() { forall-appenvs git-add; }
+run_command_git-commit() { forall-appenvs git-commit; }
 
 run_action_ask() {
     local answer
@@ -26,6 +26,7 @@ run_action_git-pull() {
 }
 
 run_action_git-diff() {
+    run_action_render
     info git-diff ${env} ${appname} to ${output_dir}
     if $(log_is_verbose); then
         verbose_cmd git diff -- ${used_files} ${output_dir} || true
@@ -35,15 +36,18 @@ run_action_git-diff() {
 }
 
 run_action_git-add() {
+    run_action_render
     info git-add ${env} ${appname} to ${output_dir}
     verbose_cmd git add "${used_files} ${output_dir}"
 }
 
 run_action_git-status() {
+    run_action_render
     git status
 }
 
 
 run_action_git-commit() {
+    run_action_git-add
     info git commit -m "${action} of ${appname} on ${env}" "${used_files} ${output_dir}"
 }
