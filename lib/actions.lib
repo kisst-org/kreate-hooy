@@ -5,12 +5,17 @@ init_module_actions() {
     use_module argparse
     add_command update "update source files with expressions from --update"
     add_command render "render manifests to --to <path> (default tmp/manifests)"
+    add_command compare "render manifests to --to <path> (default tmp/manifests) and then compare with --with path (default deployed/manifests)"
 }
 
 run_command_update() { forall-appenvs update; }
-run_command_render() { forall-appenvs update,render; }
+run_command_render() { forall-appenvs update,render;}
+run_command_compare() { forall-appenvs update,render,compare;}
 
 run_action_update() {
+    if [[ ${#updates[@]} == 0 ]]; then
+        verbose skipping updates
+    fi
     for up in ${updates[@]}; do
         verbose applying update "$up"
         apply_update_$renderer "$up"
@@ -18,13 +23,15 @@ run_action_update() {
 }
 
 run_action_render() {
+    info rendering  ${env} ${appname} to ${output_dir}
     $render_func
  }
 
 
 run_action_compare() {
     olddir=${output_dir}
-    local newdir=${compare_dir}/${env}/${appname}
+    local newdir=${with_dir:-deployed/manifests}/${env}/${appname}
+    info comparing ${env} ${appname}: ${output_dir} with ${newdir}
 
     if ${clean_before_compare:-true}; then
         verbose_cmd mkdir -p tmp/$(dirname $newdir)
@@ -32,7 +39,6 @@ run_action_compare() {
         newdir=tmp/${newdir}
         pre_diff_cleanup $newdir $olddir
     fi
-    info diffing $newdir $olddir
     verbose_cmd diff -r $newdir $olddir || true
 }
 

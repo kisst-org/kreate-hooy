@@ -13,7 +13,6 @@ init_module_argparse() {
     declare -g command=run_command_render
 
     add_command aliases "show all defined aliases"
-    # aliases[compare]=run:update,render,compare   # TODO find mechanism for compare_dir
 }
 
 add_command() {
@@ -45,6 +44,7 @@ parse_options() {
             -e|--env)       envs+=" $2";        shift;;
             -r|--run)       action_list="$2";   shift;;
             --to)           target_dir="$2";    shift;;
+            --with)         with_dir="$2";      shift;;
             --update)       updates+=("\"$2\"");shift;;
             *)
                 parse_result=0

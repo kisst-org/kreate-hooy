@@ -38,7 +38,7 @@ run_actions() {
     fi
     for action in ${action_list//,/ }; do
         if "${enabled[$action]:-true}"; then
-            info running $action with ${output_dir} for ${env} ${appname}
+            verbose running $action with ${output_dir} for ${env} ${appname}
             run_action_$action;
         fi
     done
