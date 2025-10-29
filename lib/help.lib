@@ -14,18 +14,20 @@ Options:
   -t|--to <path>      other path to render to (default is tmp/manifests)
   -w|--with <path>    used for comparison between two manifest trees
   -u|--update <expr>  update source files before rendering
-Commands
-  help          show this _help
+Commands:
+  help          show this help
 EOF
 for key in $(printf "%s\n" ${!command_help[@]} | sort); do
   printf "  %-13s %s\n" $key "${command_help[$key]}"
 done
 cat <<EOF
-paths:
-  Each path defines an application definition. This can either be a file, that will be sourced,
-  or a directory that contains exactly 1 file with a name '*.def'.
+Paths:
+  Each path defines an application definition, that will be sourced,
+  This can either be a file, or a directory that contains exactly 1 file with a name '*.def'.
 
-Note: options, commands and paths can be mixed freely (but only last command is used, if multiple commands are given)
+Note:
+  Options, commands and paths can be mixed freely
+  If multiple commands are given, only last command will be used
 EOF
 }
 
