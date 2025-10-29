@@ -6,7 +6,7 @@ cat <<EOF
 $(basename ${script_name}) [ option | command | path ]...
 
 Options:
-  -h|--help           show this help
+  -h|--help|help      show this help and exit
   -v|--verbose        give more output
   -s|--show-cmd       show the commands being executed
   -q|--quiet          no output
@@ -15,7 +15,6 @@ Options:
   -w|--with <path>    used for comparison between two manifest trees
   -u|--update <expr>  update source files before rendering
 Commands:
-  help          show this help
 EOF
 for key in $(printf "%s\n" ${!command_help[@]} | sort); do
   printf "  %-13s %s\n" $key "${command_help[$key]}"
