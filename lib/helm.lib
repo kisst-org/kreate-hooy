@@ -6,8 +6,9 @@ init_renderer_helm() {
     helm_chart_dir=helm/charts
     def_file_dir=$(dirname ${def_file})
     main_env_file="$def_file_dir/${env}/values-${appname}-${env}.yaml"
-    if [[ ! -f $main_env_file ]]; then
-        skip=true
+    if [[ -f $main_env_file ]]; then
+        _run_render=true
+    else
         return 0
     fi
     helm_value_files=(helm/env-value-files/values-env-${env}.yaml)
@@ -24,7 +25,6 @@ render_helm() {
     for f in ${helm_value_files[@]}; do helm_command+=" -f ${f}"; done
     helm_command+=" $helm_release"
     used_files="${helm_value_files[@]}"
-    verbose_cmd rm -rf ${output_dir}
     for ch in $helm_charts; do
         used_files+=" $helm_chart_dir/$ch"
         verbose_pipe split_into_files "$helm_command $helm_chart_dir/$ch"

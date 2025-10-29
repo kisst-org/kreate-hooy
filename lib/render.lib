@@ -26,9 +26,17 @@ run_action_update() {
 
 run_action_render() {
     run_action_update
-
-    info rendering  ${env} ${appname} to ${output_dir}
-    $render_func
+    info rendering ${env} ${appname} to ${output_dir} with ${renderer}
+    verbose_cmd rm -rf ${output_dir}
+    verbose_cmd mkdir -p ${output_dir}
+    for r in ${renderer//,/ }; do
+        local _run_render=false
+        init_renderer_${r}
+        if ${_run_render}; then
+            verbose running renderer ${r}
+            $render_func
+        fi
+    done
  }
 
 
@@ -85,17 +93,19 @@ forall-envapps() {
 
 run_actions() {
     renderer=""
-    skip=false
+    local _run_render=false
     action_list="$@"
     source ${def_file}
-    init_renderer_${renderer}
-    output_dir="${to_dir}/${env}/${appname}"
-    if ${skip}; then
-        info skipping $appname $env
-        return 0
-    fi
-    for action in ${action_list//,/ }; do
-        verbose running $action with ${output_dir} for ${env} ${appname}
-        run_action_$action;
+    for r in ${renderer//,/ }; do
+        init_renderer_${r}  # determine _run_render
     done
+    output_dir="${to_dir}/${env}/${appname}"
+    if ${_run_render}; then
+        for action in ${action_list//,/ }; do
+            verbose running $action with ${output_dir} for ${env} ${appname}
+            run_action_$action;
+        done
+    else
+        info skipping $appname $env
+    fi
 }
