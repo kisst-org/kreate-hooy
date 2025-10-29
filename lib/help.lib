@@ -1,33 +1,31 @@
 #####################################
 # help module
 
-show_help() { cat <<EOF
-$(basename ${script_name}) [ option | render-def ]...
+show_help() {
+cat <<EOF
+$(basename ${script_name}) [ option | command | path ]...
 
 Options:
-  -h|--help     show this help
-  -v|--verbose  give more output
-  -s|--show-cmd show the commands being executed
-  -q|--quiet    no output
-  -e|--env <e>  add environment <e> to render (can be comma separated list)
-  --run <act>   run a list of actions for each app/env combination
-  --to <path>   other path to render to (default is tmp/manifests)
+  -h|--help           show this help
+  -v|--verbose        give more output
+  -s|--show-cmd       show the commands being executed
+  -q|--quiet          no output
+  -e|--env <e>        add environment <e> to render (can be comma separated list)
+  -t|--to <path>      other path to render to (default is tmp/manifests)
+  -w|--with <path>    used for comparison between two manifest trees
+  -u|--update <expr>  update source files before rendering
 Commands
   help          show this _help
-  aliases       show all defines aliases
-  diff          run 'kubectl diff' with the rendered manifests
-  apply         run 'kubectl apply' with the rendered manifests
-  compare:<to>  compare to same in other manifests directory
-  update <expr> update some expression
-  update:<expr> <value> update some expression with some value
-  commit        TODO: run 'git commit' (pull is implied)
-  pull          TODO: run 'git pull' before starting to render, to avoid merge conflicts
-  cmd:<cmd>     run a user defined command
+EOF
+for key in $(printf "%s\n" ${!command_help[@]} | sort); do
+  printf "  %-13s %s\n" $key "${command_help[$key]}"
+done
+cat <<EOF
+paths:
+  Each path defines an application definition. This can either be a file, that will be sourced,
+  or a directory that contains exactly 1 file with a name '*.def'.
 
-Render Definitions:
-Can either be a file, that will be sourced, or a directory that contains exactly 1 file with a name 'render*.def'.
-
-Note: options end render-definitions can be freely mixed
+Note: options, commands and paths can be mixed freely (but only last command is used, if multiple commands are given)
 EOF
 }
 
