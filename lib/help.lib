@@ -10,6 +10,7 @@ Options:
   -v|--verbose        give more output
   -s|--show-cmd       show the commands being executed
   -q|--quiet          no output
+  -n|--dry-run        do not execute the actual commands
   -e|--env <e>        add environment <e> to render (can be comma separated list)
   -t|--to <path>      other path to render to (default is tmp/manifests)
   -w|--with <path>    used for comparison between two manifest trees
