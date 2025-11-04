@@ -3,8 +3,16 @@
 
 init_module_kapp() {
     use_module argparse
+    declare -Ag kapp_options
     add_command install-kapp "install the tool kapp from carvel"
+    add_command kapp-plan "show what resources will be updated"
+    add_command kapp-diff "show what resources will be updated, including detailed diffs"
+    add_command kapp-deploy "deploy the application with kapp"
 }
+
+run_command_kapp-diff() { forall-appenvs kapp-diff; }
+run_command_kapp-plan() { forall-appenvs kapp-plan; }
+run_command_kapp-deploy() { forall-appenvs kapp-deploy; }
 
 run_command_install-kapp() {
     if [ -x "$(command -v kapp)" ]; then
@@ -23,4 +31,20 @@ run_command_install-kapp() {
     fi
     chmod +x ${dst_dir}/kapp
     verbose Installed ${dst_dir}/kapp ${version}
+}
+
+
+run_action_kapp-diff() {
+    run_action_render
+    verbose_cmd kapp deploy ${kapp_options[$env]} --diff-run --diff-changes -a ${appname} -f "${output_dir}"
+}
+
+run_action_kapp-plan() {
+    run_action_render
+    verbose_cmd kapp deploy ${kapp_options[$env]} --diff-run -a ${appname} -f "${output_dir}"
+}
+
+run_action_kapp-deploy() {
+    run_action_render
+    verbose_cmd kapp deploy ${kapp_options[$env]} -a ${appname} -f "${output_dir}"
 }
