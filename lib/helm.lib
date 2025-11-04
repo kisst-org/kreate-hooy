@@ -17,7 +17,7 @@ init_renderer_helm() {
 
     #run_update_func=update_last_helm_values_file
     render_func=render_helm
-    helm_command="helm template"
+    helm_command="helm template --namespace ${namespace}" # TODO: --create-namespace does not create yaml for namespace
 }
 
 render_helm() {
@@ -26,7 +26,7 @@ render_helm() {
     for f in ${helm_value_files[@]}; do helm_command+=" -f ${f}"; done
     helm_command+=" $helm_release"
     used_files="${helm_value_files[@]}"
-    for ch in $helm_charts; do
+    for ch in ${helm_charts//,/ }; do
         local chart=${ch//@*}
         if [[ $ch == $chart ]]; then
             used_files+=" $helm_chart_dir/$ch"
