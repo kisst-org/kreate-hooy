@@ -50,7 +50,7 @@ verbose_pipe() {
     fi
     if ! ${dry_run:-false}; then
         cmd=$1; shift
-        $cmd "${@}"
+        $cmd "${@}" | $pipe
     fi
 }
 
