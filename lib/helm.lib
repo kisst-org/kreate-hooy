@@ -27,8 +27,14 @@ render_helm() {
     helm_command+=" $helm_release"
     used_files="${helm_value_files[@]}"
     for ch in $helm_charts; do
-        used_files+=" $helm_chart_dir/$ch"
-        verbose_pipe split_into_files "$helm_command $helm_chart_dir/$ch"
+        local chart=${ch//@*}
+        if [[ $ch == $chart ]]; then
+            used_files+=" $helm_chart_dir/$ch"
+            verbose_pipe split_into_files "$helm_command $helm_chart_dir/$ch"
+        else
+            local repo=${ch//*@}
+            verbose_pipe split_into_files "$helm_command --repo $repo $chart"
+        fi
     done
 }
 
