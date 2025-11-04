@@ -1,0 +1,26 @@
+#####################################
+# kube module
+
+init_module_kapp() {
+    use_module argparse
+    add_command install-kapp "install the tool kapp from carvel"
+}
+
+run_command_install-kapp() {
+    if [ -x "$(command -v kapp)" ]; then
+        info kapp already installed
+        #return 0
+    fi
+    info Installing kapp...
+    local binary_type=linux-amd64
+    local version=v0.64.2
+    local dst_dir=~/.local/bin
+
+    if (( $log_level >= $log_level_verbose )); then
+        verbose_cmd curl    -L https://github.com/carvel-dev/kapp/releases/download/${version}/kapp-${binary_type} -o ${dst_dir}/kapp
+    else
+        verbose_cmd curl -s -L https://github.com/carvel-dev/kapp/releases/download/${version}/kapp-${binary_type} -o ${dst_dir}/kapp
+    fi
+    chmod +x ${dst_dir}/kapp
+    verbose Installed ${dst_dir}/kapp ${version}
+}
