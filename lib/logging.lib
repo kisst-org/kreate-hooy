@@ -22,9 +22,13 @@ parse_args_logging() {
     esac
 }
 
+log_is_error()   { (( ${log_level} >= ${log_level_error} )) }
+log_is_warning() { (( ${log_level} >= ${log_level_warning} )) }
+log_is_info()    { (( ${log_level} >= ${log_level_info} )) }
 log_is_verbose() { (( ${log_level:-30} >= ${log_level_verbose:-40} )) }
-log_is_info()    { (( $log_level >= $log_level_info )) }
 
+error()   { if $(log_is_error) ;   then printf "ERROR "; printf "%s " "${@}"; echo; fi }
+warning() { if $(log_is_warning) ; then printf "WARN "; printf "%s " "${@}"; echo; fi }
 verbose() { if $(log_is_verbose) ; then printf "## "; printf "%s " "${@}"; echo; fi }
 info() {    if $(log_is_info) ;    then printf "# ";  printf "%s " "${@}"; echo; fi }
 #info()    { if ${log_info:-true};     then echo "${@}"; fi }
