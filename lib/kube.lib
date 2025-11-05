@@ -3,7 +3,9 @@
 
 init_module_kube() {
     use_module argparse
-    declare -Ag kubectl_options
+    declare -Ag cluster
+    declare -Ag kubeconfig
+    declare -Ag kubecontext
     add_command kube-get "get current manifests from cluster to --to <path> (default) deployed/manifests"
     add_command kube-apply "apply rendered manifests with cluster (kubectl apply)"
     add_command kube-diff "compare rendered manifests with cluster (kubectl diff)"
@@ -14,21 +16,41 @@ run_command_kube-diff() { forall-appenvs kube-diff; }
 run_command_kube-apply() { forall-appenvs kube-apply; }
 
 
+kube_cluster() {
+    local cl=${cluster[$env,$appname]:-${cluster[$env]:-undefined}}
+    if [[ $cl == undefined ]]; then
+        error unknown cluster for $env
+        exit 1
+    fi
+    echo $cl
+}
+
+kubectl_options() {
+    local cl=$(kube_cluster)
+    local cfg=${kubeconfig[$cl]:-default}
+    local opt=""
+    if [[ $cfg != default ]]; then
+        opt="--kubeconfig $cfg " # extra space at end
+    fi
+    opt+="--context ${kubecontext[$cl]}"
+    echo $opt
+}
+
 filter-kube-diff-output() { grep -E '^[+-] |^---'; }
 run_action_kube-diff() {
     run_action_render
     info kube-diff ${env} ${appname} to ${output_dir}
     if $(log_is_verbose); then
-        verbose_cmd kubectl diff ${kubectl_options[$env]} -f $output_dir || true
+        verbose_cmd kubectl diff $(kubectl_options) -f $output_dir || true
     else
-        verbose_pipe filter-kube-diff-output kubectl diff ${kubectl_options[$env]} -f $output_dir || true
+        verbose_pipe filter-kube-diff-output kubectl diff $(kubectl_options) -f $output_dir || true
     fi
 }
 
 run_action_kube-apply() {
     run_action_kube-diff
     info kube apply $output_dir
-    verbose_cmd kubectl apply ${kubectl_options[$env]} -f $output_dir
+    verbose_cmd kubectl apply $(kubectl_options) -f $output_dir
 }
 
 split_kubectl_output_into_files() {

@@ -3,7 +3,6 @@
 
 init_module_kapp() {
     use_module argparse
-    declare -Ag kapp_options
     add_command install-kapp "install the tool kapp from carvel"
     add_command kapp-plan "show what resources will be updated"
     add_command kapp-diff "show what resources will be updated, including detailed diffs"
@@ -33,18 +32,28 @@ run_command_install-kapp() {
     verbose Installed ${dst_dir}/kapp ${version}
 }
 
+kapp_options() {
+    local cl=$(kube_cluster)
+    local cfg=${kubeconfig[$cl]:-default}
+    local opt=""
+    if [[ $cfg != default ]]; then
+        opt="--kubeconfig $cfg " # extra space at end
+    fi
+    opt+="--kubeconfig-context ${kubecontext[$cl]}"
+    echo $opt
+}
 
 run_action_kapp-diff() {
     run_action_render
-    verbose_cmd kapp deploy ${kapp_options[$env]} --diff-run --diff-changes -a ${appname} -f "${output_dir}"
+    verbose_cmd kapp deploy $(kapp_options) --diff-run --diff-changes -a ${appname} -f "${output_dir}"
 }
 
 run_action_kapp-plan() {
     run_action_render
-    verbose_cmd kapp deploy ${kapp_options[$env]} --diff-run -a ${appname} -f "${output_dir}"
+    verbose_cmd kapp deploy $(kapp_options) --diff-run -a ${appname} -f "${output_dir}"
 }
 
 run_action_kapp-deploy() {
     run_action_render
-    verbose_cmd kapp deploy ${kapp_options[$env]} -a ${appname} -f "${output_dir}"
+    verbose_cmd kapp deploy $(kapp_options) -a ${appname} -f "${output_dir}"
 }
