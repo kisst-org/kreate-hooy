@@ -69,7 +69,7 @@ pre_diff_cleanup() {
 }
 
 split_into_files() {
-    yq -s \"$output_dir/\"'+ (.kind | downcase) + "_" + .metadata.name + ".yaml"'
+    yq -P 'sort_keys(..)' | yq -s \"$output_dir/\"'+ (.kind | downcase) + "_" + .metadata.name + ".yaml"'
     rm -f ${output_dir}/_.yaml
 }
 
