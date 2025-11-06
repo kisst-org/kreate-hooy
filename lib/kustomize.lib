@@ -1,0 +1,17 @@
+
+init_renderer_kustomize() {
+    def_file_dir=$(dirname ${def_file})
+    main_env_dir="$def_file_dir/${env}"
+    if [[ -f "$main_env_dir/kustomization.yaml" ]]; then
+        _run_render=true
+    else
+        return 0
+    fi
+    render_func=render_kustomize
+}
+
+render_kustomize() {
+    local command="kubectl kustomize --enable-helm"
+    #used_files+=" $helm_chart_dir/$ch"
+    verbose_pipe split_into_files "$command $main_env_dir"
+}
