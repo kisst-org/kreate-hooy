@@ -73,6 +73,12 @@ split_into_files() {
     rm -f ${output_dir}/_.yaml
 }
 
+init_renderer_post-render() {
+    _run_render=true
+    render_func=$post_render_func;
+}
+
+
 #####################################
 # run actions for all app/envs
 
