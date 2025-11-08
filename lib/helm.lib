@@ -5,14 +5,15 @@
 init_renderer_helm() {
     helm_chart_dir=helm/charts
     def_file_dir=$(dirname ${def_file})
-    main_env_file="$def_file_dir/${env}/values-${appname}-${env}.yaml"
+    parent_dir=$(dirname "$def_file_dir")
+    main_env_file="$def_file_dir/values-${appname}-${env}.yaml"
     if [[ -f $main_env_file ]]; then
         _run_render=true
     else
         return 0
     fi
-    helm_value_files=(helm/env-value-files/values-env-${env}.yaml)
-    helm_value_files+=("$def_file_dir/values-app-${appname}.yaml")
+    helm_value_files=("helm/env-value-files/values-env-${env}.yaml")
+    helm_value_files+=("$parent_dir/values*${appname}.yaml")
     helm_value_files+=("$main_env_file")
 
     #run_update_func=update_last_helm_values_file

@@ -5,14 +5,14 @@ init_module_argparse() {
     declare -gA aliases=()
     declare -ga parsed_args=()
 
-    declare -g def_files=""
-    declare -g envs=""
+    declare -g def_paths=""
+    declare -g subdirs=""
     declare -g to_dir=tmp/manifests
     declare -ga updates=()
     declare -gA command_help=()
     declare -g command=run_command_render
 
-    add_command aliases "show all defined aliases"
+    add_command aliases "show a ll defined aliases"
 }
 
 add_command() {
@@ -41,7 +41,7 @@ parse_options() {
         case $arg in
             -h|--help|help) show_help; exit 0;;
             --debug)        set -x;;
-            -e|--env)       envs+=" $2";        shift;;
+            -s|--subdir)    subdirs+=" $2";        shift;;
             -t|--to)        to_dir="$2";        shift;;
             -w|--with)      with_dir="$2";      shift;;
             -u|--update)    updates+=("\"$2\"");shift;;
@@ -53,10 +53,10 @@ parse_options() {
                 else
                     if [[ "${command_help["$arg"]:-none}" != none  ]]; then
                         command="run_command_$arg"
-                    elif [[ -f ${arg} ]]; then def_files+=" ${arg}"
-                    elif [[ -d ${arg} ]]; then def_files+=" ${arg}/*.def"
+                    elif [[ -f ${arg} ]]; then def_paths+=" ${arg}"
+                    elif [[ -d ${arg} ]]; then def_paths+=" ${arg%%/}" # remove a trailing /
                     else
-                        echo unknown argument ${arg}, should be a command, file or directory with one \*.def file
+                        echo unknown argument ${arg}, should be a command, file or directory
                         show_help
                         exit 1
                     fi
@@ -65,9 +65,4 @@ parse_options() {
         shift
     done
     verbose COMMAND $(basename $0) ${parsed_args[@]}
-    if [[ -z $envs ]]; then envs=${RENDER_DEFAULT_ENVS:-tst}; fi
-    envs=${envs//,/ }  # split on comma
-    # better test that also works with one or more spaces, might be:
-    #   if [[ ${envs:-} =~ '^ *$' ]]; then ...
-    # see https://unix.stackexchange.com/questions/146942/how-can-i-test-if-a-variable-is-empty-or-contains-only-spaces
 }

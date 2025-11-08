@@ -83,17 +83,19 @@ init_renderer_post-render() {
 # run actions for all app/envs
 
 forall-appenvs() {
-    for def_file in $def_files; do
-        for env in $envs; do
+    for path in $def_paths; do
+        if [[ -f $path ]]; then
+            def_file=$path
             run_actions "$@"
-        done
-    done
-}
-forall-envapps() {
-    for env in $envs; do
-        for f in $def_files; do
+        elif [[ -z ${subdirs:-} ]]; then
+            def_file=$path/*.def
             run_actions "$@"
-        done
+        else
+            for sd in ${subdirs//,/ }; do
+                def_file=$path/$sd/*.def
+                run_actions "$@"
+            done
+        fi
     done
 }
 
@@ -101,6 +103,7 @@ run_actions() {
     renderer=""
     local _run_render=false
     action_list="$@"
+    verbose loading ${def_file}
     source ${def_file}
     for r in ${renderer//,/ }; do
         init_renderer_${r}  # determine _run_render
