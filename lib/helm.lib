@@ -2,23 +2,16 @@
 # helm module
 
 
-init_renderer_helm() {
-    helm_chart_dir=helm/charts
-    def_file_dir=$(dirname ${def_file})
-    parent_dir=$(dirname "$def_file_dir")
-    main_env_file="$def_file_dir/values-${appname}-${env}.yaml"
-    if [[ -f $main_env_file ]]; then
-        _run_render=true
-    else
-        return 0
-    fi
+init_helm_vars() {
+    local def_file_dir=$(dirname ${def_file})
+    local parent_dir=$(dirname "$def_file_dir")
+
     helm_value_files=("helm/env-value-files/values-env-${env}.yaml")
     helm_value_files+=("$parent_dir/values*${appname}.yaml")
-    helm_value_files+=("$main_env_file")
+    helm_value_files+=("$def_file_dir/values*${appname}-${env}.yaml")
 
-    #run_update_func=update_last_helm_values_file
-    render_func=render_helm
     helm_command="helm template --namespace ${namespace}" # TODO: --create-namespace does not create yaml for namespace
+    appdef_vars+="helm_command helm_value_files helm_charts"
 }
 
 render_helm() {
@@ -30,8 +23,8 @@ render_helm() {
     for ch in ${helm_charts//,/ }; do
         local chart=${ch//@*}
         if [[ $ch == $chart ]]; then
-            used_files+=" $helm_chart_dir/$ch"
-            verbose_pipe split_into_files "$helm_command $helm_chart_dir/$ch"
+            used_files+=" $ch"
+            verbose_pipe split_into_files "$helm_command $ch"
         else
             local repo=${ch//*@}
             verbose_pipe split_into_files "$helm_command --repo $repo $chart --version $chart_version"

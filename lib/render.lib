@@ -30,12 +30,7 @@ run_action_render() {
     verbose_cmd rm -rf ${output_dir}
     verbose_cmd mkdir -p ${output_dir}
     for r in ${renderer//,/ }; do
-        local _run_render=false
-        init_renderer_${r}
-        if ${_run_render}; then
-            verbose running renderer ${r}
-            $render_func
-        fi
+        render_$r
     done
  }
 
@@ -73,11 +68,6 @@ split_into_files() {
     rm -f ${output_dir}/_.yaml
 }
 
-init_renderer_post-render() {
-    _run_render=true
-    render_func=$post_render_func;
-}
-
 
 #####################################
 # run actions for all app/envs
@@ -88,11 +78,11 @@ forall-appenvs() {
             def_file=$path
             run_actions "$@"
         elif [[ -z ${subdirs:-} ]]; then
-            def_file=$path/*.def
+            def_file=($path/*.def) # use array for globbing
             run_actions "$@"
         else
             for sd in ${subdirs//,/ }; do
-                def_file=$path/$sd/*.def
+                def_file=($path/$sd/*.def)  # use array for globbing
                 run_actions "$@"
             done
         fi
@@ -101,20 +91,22 @@ forall-appenvs() {
 
 run_actions() {
     renderer=""
-    local _run_render=false
     action_list="$@"
-    verbose loading ${def_file}
-    source ${def_file}
-    for r in ${renderer//,/ }; do
-        init_renderer_${r}  # determine _run_render
-    done
-    output_dir="${to_dir}/${env}/${appname}"
-    if ${_run_render}; then
+    local appdef_type
+    local appdef_vars="appdef_type appdef_vars appname env"
+    if [[ -f "${def_file}" ]]; then
+        verbose loading ${def_file}
+        source ${def_file}
+        init_appdef_${appdef_type}
+        output_dir="${to_dir}/${env}/${appname}"
         for action in ${action_list//,/ }; do
             verbose running $action with ${output_dir} for ${env} ${appname}
             run_action_$action;
         done
+        # cleanup of any vars set in init_appdef_...
+        verbose unsetting $appdef_vars
+        unset $appdef_vars
     else
-        info skipping $appname $env
+        info skipping $def_file
     fi
 }

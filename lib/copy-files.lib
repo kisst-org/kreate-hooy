@@ -2,14 +2,10 @@
 # helm module
 
 
-init_renderer_copy-files() {
-    def_file_dir=$(dirname "${def_file}")
-    files_list="$def_file_dir"/${env}/files/*.yaml
-    if [[ ! -z ${files_list} ]]; then _run_render=true; fi
-    render_func=render_copy-files
-}
 
 render_copy-files() {
+    def_file_dir=$(dirname "${def_file}")
+    files_list="$def_file_dir"/${env}/files/*.yaml
     verbose_cmd cp -f ${files_list} ${output_dir}
 }
 
