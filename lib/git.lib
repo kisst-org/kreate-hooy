@@ -1,6 +1,3 @@
-#####################################
-# git module
-
 
 init_module_git() {
     use_module argparse

@@ -1,5 +1,3 @@
-#####################################
-# actions module
 
 init_module_render() {
     use_module argparse

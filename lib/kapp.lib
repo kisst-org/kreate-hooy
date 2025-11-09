@@ -1,5 +1,3 @@
-#####################################
-# kube module
 
 init_module_kapp() {
     use_module argparse

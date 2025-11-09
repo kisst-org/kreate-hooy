@@ -1,5 +1,3 @@
-#####################################
-# kube module
 
 init_module_kube() {
     use_module argparse

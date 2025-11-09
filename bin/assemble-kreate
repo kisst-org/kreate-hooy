@@ -7,6 +7,10 @@ sed -e '/^main "${@}"/d' \
     -e '/^[ ]*source_files_from_lib$/d' \
     -e '/^source_files_from_lib() {/,/^}$/d' \
     "$dir"/main-kreate >"$file"
-cat "$dir"/lib/*.lib >>"$file"
-printf '\n##################\nmain "${@}"\n' >>"$file"
+for lib in "$dir"/lib/*.lib; do
+    echo adding $lib
+    printf '\n#####################################\n# %s\n' $(basename $lib) >>"$file"
+    cat $lib  >>"$file"
+done
+printf '\n#####################################\nmain "${@}"\n' >>"$file"
 chmod 755 "$file"

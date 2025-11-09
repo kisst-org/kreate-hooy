@@ -1,7 +1,3 @@
-#####################################
-# helm module
-
-
 
 render_copy-files() {
     def_file_dir=$(dirname "${def_file}")

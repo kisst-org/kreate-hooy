@@ -1,5 +1,3 @@
-#####################################
-# config module
 
 read_config() {
     : ${RENDER_CONFIG_FILE:=~/.config/kreate-hooy/config}

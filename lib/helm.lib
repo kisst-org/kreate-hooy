@@ -1,6 +1,3 @@
-#####################################
-# helm module
-
 
 init_helm_vars() {
     local def_file_dir=$(dirname ${def_file})

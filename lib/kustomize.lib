@@ -1,5 +1,4 @@
 
-
 render_kustomize() {
     local command="kubectl kustomize --enable-helm"
     #used_files+=" $helm_chart_dir/$ch"

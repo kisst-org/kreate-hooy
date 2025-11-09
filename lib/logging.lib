@@ -1,5 +1,3 @@
-#####################################
-# logging module
 
 init_logging() {
     declare -gi log_level_fatal=0

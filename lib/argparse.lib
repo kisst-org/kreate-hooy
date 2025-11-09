@@ -1,5 +1,3 @@
-#####################################
-# argparse module
 
 init_module_argparse() {
     declare -gA aliases=()
