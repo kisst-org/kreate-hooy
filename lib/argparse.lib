@@ -8,14 +8,21 @@ init_argparse() {
     declare -g to_dir=tmp/manifests
     declare -ga updates=()
     declare -gA command_help=()
-    declare -g command=run_command_render
+    declare -gA action_help=()
+    declare -g action_list=""
+    declare -g command
 
-    add_command aliases "show a ll defined aliases"
+    add_command aliases "show all defined aliases"
 }
 
 add_command() {
-    command_help["$1"]="${2:-no help sepcfied}"
+    command_help["$1"]="${2:-no help specfied}"
 }
+add_action() {
+    action_help["$1"]="${2:-no help specfied}"
+}
+
+
 
 replace_aliases() {
     for arg in "${@}"; do
@@ -39,10 +46,11 @@ parse_options() {
         case $arg in
             -h|--help|help) show_help; exit 0;;
             --debug)        set -x;;
-            -s|--subdir)    subdirs+=" $2";        shift;;
-            -t|--to)        to_dir="$2";        shift;;
-            -w|--with)      with_dir="$2";      shift;;
-            -u|--update)    updates+=("\"$2\"");shift;;
+            -s|--subdir)    subdirs+=" $2";      shift;;
+            -t|--to)        to_dir="$2";         shift;;
+            -w|--with)      with_dir="$2";       shift;;
+            -a|--action)    action_list+="$2";   shift;;
+            -u|--update)    updates+=("\"$2\""); shift;;
             *)
                 parse_result=0
                 parse_args_logging "$@"
@@ -51,6 +59,8 @@ parse_options() {
                 else
                     if [[ "${command_help["$arg"]:-none}" != none  ]]; then
                         command="run_command_$arg"
+                    elif [[ "${action_help["$arg"]:-none}" != none  ]]; then
+                        action_list+="$arg"
                     elif [[ -f ${arg} ]]; then def_paths+=" ${arg}"
                     elif [[ -d ${arg} ]]; then def_paths+=" ${arg%%/}" # remove a trailing /
                     else

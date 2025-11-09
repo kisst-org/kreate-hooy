@@ -3,15 +3,10 @@ init_module_kube() {
     declare -Ag cluster
     declare -Ag kubeconfig
     declare -Ag kubecontext
-    add_command kube-get "get current manifests from cluster to --to <path> (default) deployed/manifests"
-    add_command kube-apply "apply rendered manifests with cluster (kubectl apply)"
-    add_command kube-diff "compare rendered manifests with cluster (kubectl diff)"
+    add_action kube-get "get current manifests from cluster to --to <path> (default) deployed/manifests"
+    add_action kube-apply "apply rendered manifests with cluster (kubectl apply)"
+    add_action kube-diff "compare rendered manifests with cluster (kubectl diff)"
 }
-
-run_command_kube-get() { forall-appenvs kube-get-manifests; }
-run_command_kube-diff() { forall-appenvs kube-diff; }
-run_command_kube-apply() { forall-appenvs kube-apply; }
-
 
 kube_cluster() {
     local cl=${cluster[$env,$appname]:-${cluster[$env]:-undefined}}
