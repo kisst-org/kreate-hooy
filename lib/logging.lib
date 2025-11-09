@@ -13,9 +13,10 @@ init_logging() {
 
 parse_args_logging() {
     case "$1" in
-        -v|--verbose)   log_level=$log_level_verbose;  parse_result=1;;
+        -v|--verbose)   log_level+=10;                 parse_result=1;;
+        -vv)            log_level+=20;                 parse_result=1;;
         -q|--quiet)     log_level=$log_level_warn;     parse_result=1;;
-        -s|--show-cmd)  log_commands=true;             parse_result=1;;
+        -C|--show-cmd)  log_commands=true;             parse_result=1;;
         -n|--dry-run)   dry_run=true;                  parse_result=1;;
     esac
 }
@@ -31,7 +32,7 @@ warning() { if $(log_is_warning) ; then printf "WARN "; printf "%s " "${@}"; ech
 info()    { if $(log_is_info) ;    then printf "# ";  printf "%s " "${@}"; echo; fi }
 verbose() { if $(log_is_verbose) ; then printf "## "; printf "%s " "${@}"; echo; fi }
 debug()   { if $(log_is_debug) ;   then printf "### ";  printf "%s " "${@}"; echo; fi }
-#info()    { if ${log_info:-true};     then echo "${@}"; fi }
+
 verbose_cmd() {
     if (( $log_level >= $log_level_verbose )); then
         printf "    "; echo "${@}";
