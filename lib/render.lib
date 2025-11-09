@@ -30,6 +30,8 @@ run_action_render() {
  }
 
 
+render_post-render() { $post_render_func; }
+
 run_action_compare() {
     run_action_render
 
