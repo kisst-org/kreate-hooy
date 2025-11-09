@@ -84,6 +84,10 @@ run_command_forall() {
     done
 }
 
+init_appdef_basic() {
+    appdef_vars+=""
+}
+
 run_actions() {
     renderer=""
     action_list="$@"
@@ -92,7 +96,7 @@ run_actions() {
     if [[ -f "${def_file}" ]]; then
         verbose loading ${def_file}
         source ${def_file}
-        init_appdef_${appdef_type}
+        init_appdef_${appdef_type:-basic}
         output_dir="${to_dir}/${env}/${appname}"
         for action in ${action_list//,/ }; do
             verbose running $action with ${output_dir} for ${env} ${appname}
