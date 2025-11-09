@@ -1,5 +1,5 @@
 
-init_module_argparse() {
+init_argparse() {
     declare -gA aliases=()
     declare -ga parsed_args=()
 

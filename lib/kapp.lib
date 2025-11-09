@@ -1,6 +1,5 @@
 
 init_module_kapp() {
-    use_module argparse
     add_command install-kapp "install the tool kapp from carvel"
     add_command kapp-plan "show what resources will be updated"
     add_command kapp-diff "show what resources will be updated, including detailed diffs"

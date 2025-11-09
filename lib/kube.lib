@@ -1,6 +1,5 @@
 
 init_module_kube() {
-    use_module argparse
     declare -Ag cluster
     declare -Ag kubeconfig
     declare -Ag kubecontext

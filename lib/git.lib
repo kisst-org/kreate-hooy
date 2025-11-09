@@ -1,6 +1,5 @@
 
 init_module_git() {
-    use_module argparse
     declare -g used_files=""
     declare -g git_pulled=false
     add_command git-diff "shows the changes to source and rendered manifests with git"

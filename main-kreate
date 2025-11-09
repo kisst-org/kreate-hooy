@@ -22,6 +22,7 @@ source_files_from_lib() {
 
 main() {
     source_files_from_lib
+    init_argparse
     init_logging "${@}"
     init_all_modules
     read_config
