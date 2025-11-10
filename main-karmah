@@ -2,10 +2,10 @@
 # Script Name: render-manifests
 # Description: render helm manifests for applications and environments
 # Author: Mark Hooijkaas
-# Sourcecode: https://github.com/kisst-org/kreate-hooy/
+# Sourcecode: https://github.com/kisst-org/karmah/
 # License: Apache License version 2.0
 # Install or update to newest version with following command:
-#   curl -OL https://raw.githubusercontent.com/kisst-org/kreate-hooy/refs/heads/main/kreate && chmod 755 kreate
+#   curl -OL https://raw.githubusercontent.com/kisst-org/karmah/refs/heads/main/karmah && chmod 755 karmah
 
 set -eu
 shopt -s extglob

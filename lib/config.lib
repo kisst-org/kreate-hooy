@@ -1,6 +1,6 @@
 
 read_config() {
-    : ${RENDER_CONFIG_FILE:=~/.config/kreate-hooy/config}
+    : ${RENDER_CONFIG_FILE:=~/.config/karmah/config}
     if [[ -f ${RENDER_CONFIG_FILE} ]]; then
         source ${RENDER_CONFIG_FILE}
     fi

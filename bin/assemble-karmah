@@ -2,11 +2,11 @@
 
 dir=$(dirname $(dirname $(readlink -f ${BASH_SOURCE[0]})))
 
-file="${1:-kreate}"
+file="${1:-karmah}"
 sed -e '/^main "${@}"/d' \
     -e '/^[ ]*source_files_from_lib$/d' \
     -e '/^source_files_from_lib() {/,/^}$/d' \
-    "$dir"/main-kreate >"$file"
+    "$dir"/main-karmah >"$file"
 for lib in "$dir"/lib/*.lib; do
     echo adding $lib
     printf '\n#####################################\n# %s\n' $(basename $lib) >>"$file"
