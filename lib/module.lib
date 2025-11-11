@@ -16,7 +16,7 @@ load_module() {
 use_module() {
     local module="$1"
     if ${module_needs_init["${module}"]:-true}; then
-        verbose running init module for "${module}"
+        debug running init module for "${module}"
         init_module_${module}
         module_needs_init["${module}"]=false
     fi
