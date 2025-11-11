@@ -77,11 +77,11 @@ run_command_forall() {
             karmah_file=$path
             run_actions ${action_list:-render}
         elif [[ -z ${subdirs:-} ]]; then
-            karmah_file=($path/*.def) # use array for globbing
+            karmah_file=($path/*.karmah) # use array for globbing
             run_actions ${action_list:-render}
         else
             for sd in ${subdirs//,/ }; do
-                karmah_file=($path/$sd/*.def)  # use array for globbing
+                karmah_file=($path/$sd/*.karmah)  # use array for globbing
                 run_actions ${action_list:-render}
             done
         fi

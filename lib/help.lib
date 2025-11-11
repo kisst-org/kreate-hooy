@@ -21,7 +21,7 @@ done
 cat <<EOF
 Paths:
   Each path defines an application definition, that will be sourced,
-  This can either be a file, or a directory that contains exactly 1 file with a name '*.def'.
+  This can either be a file, or a directory that contains exactly 1 file with a name '*.karmah'.
   When one or more --subdirs are specfied, these will be append to the path
 
 Note:
