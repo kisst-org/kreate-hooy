@@ -1,4 +1,9 @@
 
+init_bash_module_helm() {
+    use_module render
+    unset_vars+=" helm_command helm_value_files helm_charts"
+}
+
 add_optional_helm_values_file() {
     if [[ -f $1 ]]; then
         helm_value_files+=("$1")
@@ -14,7 +19,6 @@ init_helm_vars() {
     add_optional_helm_values_file "$karmah_dir/values*${appname}-${env}.yaml"
 
     helm_command="helm template --namespace ${namespace}" # TODO: --create-namespace does not create yaml for namespace
-    karmah_vars+="helm_command helm_value_files helm_charts"
 }
 
 render_helm() {

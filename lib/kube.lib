@@ -1,11 +1,13 @@
 
 init_bash_module_kube() {
+    use_module render
     declare -Ag cluster
     declare -Ag kubeconfig
     declare -Ag kubecontext
     add_action kube-get "get current manifests from cluster to --to <path> (default) deployed/manifests"
     add_action kube-apply "apply rendered manifests with cluster (kubectl apply)"
     add_action kube-diff "compare rendered manifests with cluster (kubectl diff)"
+    unset_vars+=" cluster namespace"
 }
 
 kube_cluster() {

@@ -7,6 +7,7 @@ init_bash_module_render() {
     add_command "forall" "run actions for all paths"
     command=run_command_forall
     declare -g to_dir
+    declare -g unset_vars="karmah_type appname env renderer output_dir"
 }
 
 run_action_update() {
@@ -96,13 +97,15 @@ run_actions() {
     renderer=""
     action_list="$@"
     local karmah_type
-    local karmah_vars="karmah_type karmah_vars appname env"
     if [[ -f "${karmah_file}" ]]; then
+        # cleanup of any vars that might have been set with previous file
+        debug unsetting $unset_vars
+        unset $unset_vars
         verbose loading ${karmah_file}
         local karmah_dir=$(dirname $karmah_file)
         local common_dir=$(dirname $karmah_dir)/common
-        used_files=${karmah_dir}
-        common_karmnah_file=($common_dir/common*.karmah)
+        local used_files=${karmah_dir}
+        local common_karmnah_file=($common_dir/common*.karmah)
         if [[ -f $common_karmnah_file ]]; then
             source $common_karmnah_file
         fi
@@ -113,9 +116,6 @@ run_actions() {
             verbose running $action with ${output_dir} for ${env} ${appname}
             run_action_$action;
         done
-        # cleanup of any vars set in init_karmah_...
-        verbose unsetting $karmah_vars
-        unset $karmah_vars
     else
         info skipping $karmah_file
     fi
