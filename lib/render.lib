@@ -72,48 +72,48 @@ split_into_files() {
 # run actions for all app/envs
 
 run_command_forall() {
-    for path in $def_paths; do
+    for path in $karmah_paths; do
         if [[ -f $path ]]; then
-            def_file=$path
+            karmah_file=$path
             run_actions ${action_list:-render}
         elif [[ -z ${subdirs:-} ]]; then
-            def_file=($path/*.def) # use array for globbing
+            karmah_file=($path/*.def) # use array for globbing
             run_actions ${action_list:-render}
         else
             for sd in ${subdirs//,/ }; do
-                def_file=($path/$sd/*.def)  # use array for globbing
+                karmah_file=($path/$sd/*.def)  # use array for globbing
                 run_actions ${action_list:-render}
             done
         fi
     done
 }
 
-init_appdef_basic() {
-    appdef_vars+=""
+init_karmah_basic() {
+    karmah_vars+=""
 }
 
 run_actions() {
     renderer=""
     action_list="$@"
-    local appdef_type
-    local appdef_vars="appdef_type appdef_vars appname env"
-    if [[ -f "${def_file}" ]]; then
-        verbose loading ${def_file}
-        local def_dir=$(dirname $def_file)
-        local parent_dir=$(dirname $def_dir)
-        used_files=${def_dir}
-        source ${def_file}
-        init_appdef_${appdef_type:-basic}
+    local karmah_type
+    local karmah_vars="karmah_type karmah_vars appname env"
+    if [[ -f "${karmah_file}" ]]; then
+        verbose loading ${karmah_file}
+        local karmah_dir=$(dirname $karmah_file)
+        local parent_dir=$(dirname $karmah_dir)
+        used_files=${karmah_dir}
+        source ${karmah_file}
+        init_karmah_${karmah_type:-basic}
         output_dir="${to_dir:-tmp/manifests}/${env}/${appname}"
         for action in ${action_list//,/ }; do
             verbose running $action with ${output_dir} for ${env} ${appname}
             run_action_$action;
         done
-        # cleanup of any vars set in init_appdef_...
-        verbose unsetting $appdef_vars
-        unset $appdef_vars
+        # cleanup of any vars set in init_karmah_...
+        verbose unsetting $karmah_vars
+        unset $karmah_vars
     else
-        info skipping $def_file
+        info skipping $karmah_file
     fi
 }
 
