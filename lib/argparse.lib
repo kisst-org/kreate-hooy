@@ -10,8 +10,6 @@ init_argparse() {
     declare -gA action_help=()
     declare -g action_list=""
     declare -g command
-
-    add_command aliases "show all defined aliases"
 }
 
 add_command() {

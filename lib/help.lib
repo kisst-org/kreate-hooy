@@ -1,4 +1,9 @@
 
+init_module_help() {
+    add_command aliases "show all defined aliases"
+    add_command version "show version of karmah"
+}
+
 show_help() {
 cat <<EOF
 $(basename ${script_name}) [ option | command | action | path ]...
@@ -39,8 +44,12 @@ EOF
 }
 
 run_command_aliases() {
-echo Aliases:
-for key in $(printf "%s\n" ${!aliases[@]} | sort); do
-    printf "  %-13s %s\n" $key "${aliases[$key]}"
-done |sort -k2 -k1
+  echo Aliases:
+  for key in $(printf "%s\n" ${!aliases[@]} | sort); do
+      printf "  %-13s %s\n" $key "${aliases[$key]}"
+  done |sort -k2 -k1
+}
+
+run_command_version() {
+  echo karmah version: $karmah_version
 }
