@@ -17,28 +17,26 @@ run_action_git-pull() {
 }
 
 run_action_git-diff() {
-    run_action_render
     info git-diff ${env} ${appname} to ${output_dir}
     if $(log_is_verbose); then
         verbose_cmd git diff -- ${used_files} ${output_dir} || true
     else
-        verbose_cmd git diff -- ${used_files} ${output_dir} | grep -E '^[+-] |^---' || true
+        verbose_cmd git diff -- ${used_files} ${output_dir} | grep -E '^[+-]|^---' || true
     fi
 }
 
 run_action_git-add() {
-    run_action_render
     info git-add ${env} ${appname} to ${output_dir}
-    verbose_cmd git add "${used_files} ${output_dir}"
+    verbose_cmd git add ${used_files} ${output_dir}
 }
 
 run_action_git-status() {
-    run_action_render
     git status
 }
 
 
 run_action_git-commit() {
     run_action_git-add
-    info git commit -m "${action} of ${appname} on ${env}" "${used_files} ${output_dir}"
+    : ${git_commit_message:=${action} of ${appname} on ${env}}
+    verbose_cmd git commit -m "${git_commit_message}" ${used_files} ${output_dir}
 }

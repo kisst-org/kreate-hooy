@@ -3,8 +3,10 @@ init_module_render() {
     add_action update "update source files with expressions from --update"
     add_action render "render manifests to --to <path> (default tmp/manifests)"
     add_action compare "render manifests to --to <path> (default tmp/manifests) and then compare with --with path (default deployed/manifests)"
+    add_action deploy "render to deployed/manifests and optionally deploy to kubernetes"
     add_command "forall" "run actions for all paths"
     command=run_command_forall
+    declare -g to_dir
 }
 
 run_action_update() {
@@ -97,9 +99,12 @@ run_actions() {
     local appdef_vars="appdef_type appdef_vars appname env"
     if [[ -f "${def_file}" ]]; then
         verbose loading ${def_file}
+        local def_dir=$(dirname $def_file)
+        local parent_dir=$(dirname $def_dir)
+        used_files=${def_dir}
         source ${def_file}
         init_appdef_${appdef_type:-basic}
-        output_dir="${to_dir}/${env}/${appname}"
+        output_dir="${to_dir:-tmp/manifests}/${env}/${appname}"
         for action in ${action_list//,/ }; do
             verbose running $action with ${output_dir} for ${env} ${appname}
             run_action_$action;
@@ -110,4 +115,15 @@ run_actions() {
     else
         info skipping $def_file
     fi
+}
+
+run_action_deploy() {
+    output_dir="${to_dir:-deployed/manifests}/${env}/${appname}"
+    local actions=${deploy_actions:-render,git-diff,ask,git-commit}
+    info deploying ${output_dir} with actions: ${actions}
+    # TODO: output_dir is different for actions before this action
+    for action in ${actions//,/ }; do
+        verbose running $action with ${output_dir} for ${env} ${appname}
+        run_action_$action;
+    done
 }
