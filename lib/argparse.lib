@@ -47,7 +47,7 @@ parse_options() {
             -t|--to)        to_dir="$2";         shift;;
             -w|--with)      with_dir="$2";       shift;;
             -a|--action)    action_list+="$2";   shift;;
-            -u|--update)    updates+=("\"$2\""); shift;;
+            -u|--update)    updates+=("$2"); shift;;
             -m|--message)   git_commit_message="$2"; shift;;
             *)
                 parse_result=0
