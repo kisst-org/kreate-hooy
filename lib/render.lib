@@ -100,7 +100,7 @@ run_actions() {
     if [[ -f "${karmah_file}" ]]; then
         verbose loading ${karmah_file}
         local karmah_dir=$(dirname $karmah_file)
-        local parent_dir=$(dirname $karmah_dir)
+        local common_dir=$(dirname $karmah_dir)/common
         used_files=${karmah_dir}
         source ${karmah_file}
         init_karmah_${karmah_type:-basic}

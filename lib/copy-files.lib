@@ -1,7 +1,6 @@
 
 render_copy-files() {
-    karmah_file_dir=$(dirname "${karmah_file}")
-    files_list="$karmah_file_dir"/${env}/files/*.yaml
+    files_list="$karmah_dir"/files/*.yaml
     verbose_cmd cp -f ${files_list} ${output_dir}
 }
 

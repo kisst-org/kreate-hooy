@@ -1,11 +1,10 @@
 
 init_helm_vars() {
-    local karmah_file_dir=$(dirname ${karmah_file})
-    local parent_dir=$(dirname "$karmah_file_dir")
+    local parent_dir=$(dirname "$karmah_dir")
 
     helm_value_files=("helm/env-value-files/values-env-${env}.yaml")
     helm_value_files+=("$parent_dir/values*${appname}.yaml")
-    helm_value_files+=("$karmah_file_dir/values*${appname}-${env}.yaml")
+    helm_value_files+=("$karmah_dir/values*${appname}-${env}.yaml")
 
     helm_command="helm template --namespace ${namespace}" # TODO: --create-namespace does not create yaml for namespace
     karmah_vars+="helm_command helm_value_files helm_charts"
