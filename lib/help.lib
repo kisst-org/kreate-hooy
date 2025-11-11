@@ -1,7 +1,7 @@
 
 show_help() {
 cat <<EOF
-$(basename ${script_name}) [ option | command | path ]...
+$(basename ${script_name}) [ option | command | action | path ]...
 
 Options:
   -h|--help|help      show this help and exit
@@ -13,10 +13,18 @@ Options:
   -t|--to <path>      other path to render to (default is tmp/manifests)
   -w|--with <path>    used for comparison between two manifest trees
   -u|--update <expr>  update source files before rendering
+  -a|--action <act>   add action to list of actions to perform
+  -m|--message <msg>  set message to us with git commit
 Commands:
 EOF
 for key in $(printf "%s\n" ${!command_help[@]} | sort); do
   printf "  %-13s %s\n" $key "${command_help[$key]}"
+done
+cat <<EOF
+Actions:
+EOF
+for key in $(printf "%s\n" ${!action_help[@]} | sort); do
+  printf "  %-13s %s\n" $key "${action_help[$key]}"
 done
 cat <<EOF
 Paths:
@@ -25,7 +33,7 @@ Paths:
   When one or more --subdirs are specfied, these will be append to the path
 
 Note:
-  Options, commands and paths can be mixed freely
+  Options, commands, actions and paths can be mixed freely
   If multiple commands are given, only last command will be used
 EOF
 }
