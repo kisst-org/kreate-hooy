@@ -1,26 +1,18 @@
 
 init_bash_module_kube() {
     use_module render
-    declare -Ag cluster
+    declare -g kube_cluster
     declare -Ag kubeconfig
     declare -Ag kubecontext
     add_action kube-get "get current manifests from cluster to --to <path> (default) deployed/manifests"
     add_action kube-apply "apply rendered manifests with cluster (kubectl apply)"
     add_action kube-diff "compare rendered manifests with cluster (kubectl diff)"
-    unset_vars+=" cluster namespace"
+    unset_vars+=" kube_cluster namespace"
 }
 
-kube_cluster() {
-    local cl=${cluster[$env,$appname]:-${cluster[$env]:-undefined}}
-    if [[ $cl == undefined ]]; then
-        error unknown cluster for $env
-        exit 1
-    fi
-    echo $cl
-}
 
 kubectl_options() {
-    local cl=$(kube_cluster)
+    local cl=${kube_cluster}
     local cfg=${kubeconfig[$cl]:-default}
     local opt=""
     if [[ $cfg != default ]]; then

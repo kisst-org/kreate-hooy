@@ -26,7 +26,7 @@ run_command_install-kapp() {
 }
 
 kapp_options() {
-    local cl=$(kube_cluster)
+    local cl=${kube_cluster}
     local cfg=${kubeconfig[$cl]:-default}
     local opt=""
     if [[ $cfg != default ]]; then
