@@ -1,5 +1,5 @@
 
-init_module_render() {
+init_bash_module_render() {
     add_action update "update source files with expressions from --update"
     add_action render "render manifests to --to <path> (default tmp/manifests)"
     add_action compare "render manifests to --to <path> (default tmp/manifests) and then compare with --with path (default deployed/manifests)"

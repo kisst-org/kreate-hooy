@@ -1,5 +1,5 @@
 
-init_module_kapp() {
+init_bash_module_kapp() {
     add_command install-kapp "install the tool kapp from carvel"
     add_action kapp-plan "show what resources will be updated"
     add_action kapp-diff "show what resources will be updated, including detailed diffs"

@@ -1,5 +1,5 @@
 
-init_module_kube() {
+init_bash_module_kube() {
     declare -Ag cluster
     declare -Ag kubeconfig
     declare -Ag kubecontext
