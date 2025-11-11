@@ -102,6 +102,10 @@ run_actions() {
         local karmah_dir=$(dirname $karmah_file)
         local common_dir=$(dirname $karmah_dir)/common
         used_files=${karmah_dir}
+        common_karmnah_file=($common_dir/common*.karmah)
+        if [[ -f $common_karmnah_file ]]; then
+            source $common_karmnah_file
+        fi
         source ${karmah_file}
         init_karmah_${karmah_type:-basic}
         output_dir="${to_dir:-tmp/manifests}/${env}/${appname}"
