@@ -9,7 +9,11 @@ init_bash_module_git() {
 
 run_action_ask() {
     local answer
-    read -p "do you want to continue?" answer
+    read -p "do you want to continue [y/N]? " answer
+    if [[ "${answer}" != y ]] ;then
+        info "Stopping karmah"
+        exit 1
+    fi
 }
 
 run_action_git-pull() {
