@@ -40,10 +40,7 @@ run_action_kube-diff() {
 }
 
 run_action_kube-apply() {
-    run_action_kube-dirun_action_kube-get() {
-    verbose_cmd kubectl $(kubectl_options) -n $namespace get ${extra_args:-pods,deploy,sts,cm}
-}
-ff
+    run_action_kube-diff
     info kube apply $output_dir
     verbose_cmd kubectl apply $(kubectl_options) -f $output_dir
 }
@@ -88,11 +85,14 @@ run_action_kube-restart() {
 run_action_kube-tmp-scale() {
     local res
     for res in ${kube_resource_list//,/ }; do
-        local repl=${kube_replicas:-default}
-        if [[  $repl == default ]]; then
-            repl=${kube_default_replicas[$res]}
-        fi
-        res=${kube_resource_alias[$res]:-$res}
-        verbose_cmd kubectl $(kubectl_options) -n $namespace scale $res --replicas $repl
+        verbose_cmd kubectl $(kubectl_options) -n $namespace scale $res --replicas $(calc_kube_replicas $res)
     done
+}
+
+calc_kube_replicas() {
+    local repl=${kube_replicas:-default}
+    if [[  $repl == default ]]; then
+        repl=${kube_default_replicas[$1]}
+    fi
+    echo $repl
 }
