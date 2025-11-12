@@ -62,3 +62,7 @@ run_action_kube-get-manifests() {
          yq -i 'del(.metadata.creationTimestamp)' "${f}"
     done
 }
+
+run_action_kube-get() {
+    verbose_cmd kubectl $(kubectl_options) -n $namespace get ${extra_args:-pods,deploy,sts,cm}
+}
