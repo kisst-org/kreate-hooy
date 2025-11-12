@@ -52,6 +52,7 @@ parse_options() {
             -u|--update)    updates+=("$2"); shift;;
             -m|--message)   git_commit_message="$2"; shift;;
             kube-get)       action_list+="kube-get"; collect_unknown_args=true ;;
+            kube-watch)     action_list+="kube-watch"; collect_unknown_args=true ;;
             *)
                 parse_result=0
                 parse_args_logging "$@"

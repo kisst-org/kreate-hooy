@@ -66,3 +66,6 @@ run_action_kube-get-manifests() {
 run_action_kube-get() {
     verbose_cmd kubectl $(kubectl_options) -n $namespace get ${extra_args:-pods,deploy,sts,cm}
 }
+run_action_kube-watch() {
+    verbose_cmd watch kubectl $(kubectl_options) -n $namespace get ${extra_args:-pods,deploy,sts,cm}
+}
