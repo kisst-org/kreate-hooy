@@ -4,9 +4,13 @@ init_bash_module_kube() {
     declare -g kube_cluster
     declare -Ag kubeconfig
     declare -Ag kubecontext
+    declare -Ag kube_resource_alias
+    declare -g kube_resource_list=""
+    declare -gA kube_default_replicas
     add_action kube-get "get current manifests from cluster to --to <path> (default) deployed/manifests"
     add_action kube-apply "apply rendered manifests with cluster (kubectl apply)"
     add_action kube-diff "compare rendered manifests with cluster (kubectl diff)"
+    add_action kube-tmp-scale "scale a resource without changing source or deployment files"
     unset_vars+=" kube_cluster namespace"
 }
 
@@ -34,7 +38,10 @@ run_action_kube-diff() {
 }
 
 run_action_kube-apply() {
-    run_action_kube-diff
+    run_action_kube-dirun_action_kube-get() {
+    verbose_cmd kubectl $(kubectl_options) -n $namespace get ${extra_args:-pods,deploy,sts,cm}
+}
+ff
     info kube apply $output_dir
     verbose_cmd kubectl apply $(kubectl_options) -f $output_dir
 }
@@ -68,4 +75,15 @@ run_action_kube-get() {
 }
 run_action_kube-watch() {
     verbose_cmd watch kubectl $(kubectl_options) -n $namespace get ${extra_args:-pods,deploy,sts,cm}
+}
+run_action_kube-tmp-scale() {
+    local res
+    for res in ${kube_resource_list//,/ }; do
+        local repl=${kube_replicas:-default}
+        if [[  $repl == default ]]; then
+            repl=${kube_default_replicas[$res]}
+        fi
+        res=${kube_resource_alias[$res]:-$res}
+        verbose_cmd kubectl $(kubectl_options) -n $namespace scale $res --replicas $repl
+    done
 }

@@ -23,13 +23,13 @@ Options:
 Commands:
 EOF
 for key in $(printf "%s\n" ${!command_help[@]} | sort); do
-  printf "  %-13s %s\n" $key "${command_help[$key]}"
+  printf "  %-14s %s\n" $key "${command_help[$key]}"
 done
 cat <<EOF
 Actions:
 EOF
 for key in $(printf "%s\n" ${!action_help[@]} | sort); do
-  printf "  %-13s %s\n" $key "${action_help[$key]}"
+  printf "  %-14s %s\n" $key "${action_help[$key]}"
 done
 cat <<EOF
 Paths:
