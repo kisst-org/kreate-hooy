@@ -1,7 +1,7 @@
 
 init_bash_module_helm() {
     use_module render
-    unset_vars+=" helm_command helm_value_files helm_charts"
+    vars_to_clear+=" helm_command helm_value_files helm_charts"
 }
 
 add_optional_helm_values_file() {
