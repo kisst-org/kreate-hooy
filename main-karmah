@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# Script Name: render-manifests
-# Description: render helm manifests for applications and environments
+# Script Name: karmah
+# Description: Kubernetes Assortment of Rendered MAnifests Helpers
 # Author: Mark Hooijkaas
 # Sourcecode: https://github.com/kisst-org/karmah/
 # License: Apache License version 2.0

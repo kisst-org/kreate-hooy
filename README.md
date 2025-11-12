@@ -4,15 +4,6 @@ The program `karmah` is a simple but flexible tool to render manifests for kuber
 
 The purpose is to render the manifests for a specific application (`appname`) and a specific environment.
 
-# Environments
-Some examples of environments are:
-- `lab`: meant for infra structure testing
-- `tst`: meant for testing applications
-- `stg`: staging
-- `prd`: production
-- `all`: all environments of an application
-In general it is recommended to use short (e.g. 3 letter) names for environments.
-
 # Render Definitions
 
 
@@ -70,6 +61,7 @@ Additionally the following tools are needed for some commands:
 - `yq`: is needed for splitting the output of `helm template` to individual files
 - `git`: for the `pull` and `commit` commands
 - `kubectl`: with a correct kubeconfig file for the `diff` and `apply`
+- `kapp`: if this functionality is used
 
 Installation can be done by copying the `karmah` script to the correct location.
 ```
@@ -83,11 +75,11 @@ The script can be placed in the directory with all the manifests definitions.
 
 The following directory structure is recommended when using `helm` as renderer:
 - `karmah`: the script itself
-- `apps/<appname>/render-app-<appname>.def`: render-definitions for an application and environments
-- `apps/<appname>/values-app-<appname>.yaml`:  helm values file for all environments of an application (included before the environment specifc values)
-- `apps/<appname>/values-<appname>-<env>.yaml`: helm values file for a specific environment of an application
-- Optionally `apps/<appname>/render-appenv-<appname>-<env>.def`: render-definition for a specific environment of an application. Only needed if this
+- `apps/<appname>/<env>/render-app-<appname>-<env>.karmah`: render-definitions for an application and environment
+- `apps/<appname>/<env>/values-app-<appname>-<env>.yaml`:  helm values file for an environment of an application
+- `apps/<appname>/common/values-<appname>.yaml`: helm values file for all environments of an application
 - `helm/charts`: the helm-charts that can be referred to in the render definitions
-- `helm/env-value-files/values-<env>.def`: values specific for this environment
+- `helm/env-value-files/values-<env>.karmah`: values specific for this environment
 - `tmp/manifests`: the location where the rendered manifests are stored
-- `deployed/manifests`: the location to store rendered manifests that are actually are dpeloyed
+- `deployed/manifests`: the location to store rendered manifests that are actually are deployed
+- `config.d`: specific configuration, e.g. kubenertes details or aliasses

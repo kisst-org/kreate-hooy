@@ -1,4 +1,6 @@
-# karmah - create files with simple templates and no tools
+# DEPRECATED: This documentation is not relevant and will be deleted
+
+## karmah - create files with simple templates and no tools
 
 This document describes the original design philosophy for karmah.
 This needs to be updated
