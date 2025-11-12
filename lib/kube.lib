@@ -10,7 +10,8 @@ init_bash_module_kube() {
     add_action kube-get "get current manifests from cluster to --to <path> (default) deployed/manifests"
     add_action kube-apply "apply rendered manifests with cluster (kubectl apply)"
     add_action kube-diff "compare rendered manifests with cluster (kubectl diff)"
-    add_action kube-tmp-scale "scale a resource without changing source or deployment files"
+    add_action kube-tmp-scale "scale resource(s) without changing source or deployment files"
+    add_action kube-restart "restart resource(s)"
     unset_vars+=" kube_cluster namespace"
 }
 
@@ -75,6 +76,13 @@ run_action_kube-get() {
 }
 run_action_kube-watch() {
     verbose_cmd watch kubectl $(kubectl_options) -n $namespace get ${extra_args:-pods,deploy,sts,cm}
+}
+run_action_kube-restart() {
+    local res
+    for res in ${kube_resource_list//,/ }; do
+        res=${kube_resource_alias[$res]:-$res}
+        verbose_cmd kubectl $(kubectl_options) -n $namespace rollout restart $res
+    done
 }
 run_action_kube-tmp-scale() {
     local res
