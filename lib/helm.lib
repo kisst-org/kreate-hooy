@@ -5,8 +5,12 @@ init_bash_module_helm() {
 }
 
 add_optional_helm_values_file() {
-    if [[ -f $1 ]]; then
-        helm_value_files+=("$1")
+    local f=($1)
+    if [[ -f $f ]]; then
+        debug adding values file $f
+        helm_value_files+=("$f")
+    else
+        debug skipping values file $f
     fi
 }
 
