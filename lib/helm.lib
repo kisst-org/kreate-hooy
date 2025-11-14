@@ -68,22 +68,6 @@ render_helm() {
     run_helm_forall_charts "verbose_pipe split_into_files" ${helm_template_command:-$default_cmd}
 }
 
-apply_update_helm() {
-    local f=${helm_value_files[-1]}
-    verbose applying update "$1" to "$f"
-    case "$1" in
-        yq:*)
-            local expr="${1#yq:}"
-            expr=${expr//=/=\"}\"  # add quotes around =...
-            verbose_cmd yq -i "${expr}" "$f"
-        ;;
-        *)
-            echo unknown update "$1";
-            exit 1
-        ;;
-    esac
-}
-
 update_version_helm() {
     local res
     local val_file=($karmah_dir/values*.yaml)
