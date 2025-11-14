@@ -4,11 +4,7 @@ init_bash_module_render() {
     add_action render "render manifests to --to <path> (default tmp/manifests)"
     add_action compare "render manifests to --to <path> (default tmp/manifests) and then compare with --with path (default deployed/manifests)"
     add_action deploy "render to deployed/manifests and optionally deploy to kubernetes"
-    add_command "forall" "run actions for all paths"
-    command=run_command_forall
     declare -g to_dir
-    declare -g global_vars="karmah_type appname env renderer output_dir"
-    declare -g global_arrays=""
 }
 
 run_action_update() {

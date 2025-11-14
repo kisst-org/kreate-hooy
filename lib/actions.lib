@@ -1,5 +1,12 @@
 # run actions for all app/envs
 
+init_bash_module_actions() {
+    add_command "forall" "run actions for all paths"
+    command=run_command_forall
+    declare -g global_vars="karmah_type appname env renderer output_dir"
+    declare -g global_arrays=""
+}
+
 run_command_forall() {
     for path in $karmah_paths; do
         if [[ -f $path ]]; then
