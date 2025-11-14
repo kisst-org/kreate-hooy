@@ -12,8 +12,8 @@ init_bash_module_kube() {
     add_action kube-diff "compare rendered manifests with cluster (kubectl diff)"
     add_action kube-tmp-scale "scale resource(s) without changing source or deployment files"
     add_action kube-restart "restart resource(s)"
-    vars_to_clear+=" kube_cluster namespace kube_resource_alias kube_default_replicas  "
-    vars_to_declare_gA+=" kube_resource_alias kube_default_replicas"
+    global_vars+=" kube_cluster namespace kube_resource_alias kube_default_replicas  "
+    global_arrays+=" kube_resource_alias kube_default_replicas"
 }
 
 
