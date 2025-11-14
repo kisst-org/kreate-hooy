@@ -1,8 +1,8 @@
 
 init_bash_module_kube() {
     use_module render
-    declare -Ag kubeconfig
-    declare -Ag kubecontext
+    declare -Ag kube_config_map
+    declare -Ag kube_context_map
     add_action kube-get "get current manifests from cluster to --to <path> (default) deployed/manifests"
     add_action kube-apply "apply rendered manifests with cluster (kubectl apply)"
     add_action kube-diff "compare rendered manifests with cluster (kubectl diff)"
@@ -15,12 +15,12 @@ init_bash_module_kube() {
 
 kubectl_options() {
     local cl=${kube_cluster}
-    local cfg=${kubeconfig[$cl]:-default}
+    local cfg=${kube_config_map[$cl]:-default}
     local opt=""
     if [[ $cfg != default ]]; then
-        opt="--kubeconfig $cfg " # extra space at end
+        opt="--kube_config_map $cfg " # extra space at end
     fi
-    opt+="--context ${kubecontext[$cl]}"
+    opt+="--context ${kube_context_map[$cl]}"
     echo $opt
 }
 

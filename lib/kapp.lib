@@ -27,12 +27,12 @@ run_command_install-kapp() {
 
 kapp_options() {
     local cl=${kube_cluster}
-    local cfg=${kubeconfig[$cl]:-default}
+    local cfg=${kube_config_map[$cl]:-default}
     local opt=""
     if [[ $cfg != default ]]; then
-        opt="--kubeconfig $cfg " # extra space at end
+        opt="--kube_config_map $cfg " # extra space at end
     fi
-    opt+="--kubeconfig-context ${kubecontext[$cl]} -n ${namespace} -a $(basename $target) -f ${output_dir}"
+    opt+="--kube_config_map-context ${kube_context_map[$cl]} -n ${namespace} -a $(basename $target) -f ${output_dir}"
     echo $opt
 }
 
