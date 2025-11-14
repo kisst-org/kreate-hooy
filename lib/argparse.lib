@@ -7,9 +7,40 @@ init_argparse() {
     declare -g subdirs=""
     declare -ga updates=()
     declare -gA command_help=()
+    declare -ga option_help=()
+    declare -gA option_func=()
+    declare -gA short_option_func=()
+
     declare -gA action_help=()
     declare -g action_list=""
     declare -g command
+}
+
+init_bash_module_argparse() {
+    use_module logging
+    add_option s subdir   dir   "add subdir to list of subdirs (can be comma separated list)"
+    add_option t to       path  "other path to render to (default is tmp/manifests)"
+    add_option w with     path  used for comparison between two manifest trees
+    add_option u update   expr  update source files before rendering
+    add_option a action   act   add action to list of actions to perform
+    add_option m message  msg   set message to us with git commit
+}
+
+add_option() {
+    local short=$1
+    local name=$2
+    local arg=$3
+    shift 3
+    local help=$@
+    option_func[--$name]=parse_option_$name
+    if [[ -z $short ]]; then
+        name="--$name"
+    else
+        option_func[-$short]=parse_option_$name
+        name="-$short|--$name"
+    fi
+    [[ -z $arg ]] || name+=" <$arg>"
+    option_help+=("$(printf "  %-20s %s\n" "$name" "$help")")
 }
 
 add_command() {
@@ -19,6 +50,18 @@ add_action() {
     action_help["$1"]="${2:-no help specfied}"
 }
 
+parse_option() {
+    local name=$1
+    local func=${option_func[$name]:-}
+    if [[ -z $func ]]; then
+        error "unknown option $name"
+        show_short_help
+        exit 1
+    fi
+    shift
+    extra_shift=0
+    "${option_func[$name]}" "$@"
+}
 
 
 replace_aliases() {
@@ -42,22 +85,18 @@ parse_options() {
     log_level=$log_level_info
     while [[ $# > 0 ]]; do
         arg=$1
+        parse_result=0
+        extra_shift=0
+        shift
         case $arg in
             -h|--help|help) show_help; exit 0;;
             --debug)        set -x;;
-            -s|--subdir)    subdirs+=" $2";      shift;;
-            -t|--to)        to_dir="$2";         shift;;
-            -w|--with)      with_dir="$2";       shift;;
-            -a|--action)    action_list+=" $2";  shift;;
-            -m|--message)   git_commit_message="$2"; shift;;
-            -r|--resource)  kube_resource_list+=" $2"; shift;;
-            -R|--replicas)  kube_replicas="$2";  shift;;
-            -V|--version)   update_version="$2"; shift;;
             kube-get)       action_list+=" kube-get"; collect_unknown_args=true ;;
             kube-watch)     action_list+=" kube-watch"; collect_unknown_args=true ;;
+            --*)            parse_option ${arg} "$@"; shift $extra_shift ;;
+            -*)             parse_option ${arg}  "$@"; shift $extra_shift ;;
             *)
-                parse_result=0
-                parse_args_logging "$@"
+                #parse_args_logging "$@"
                 if [[ "$parse_result" > 0 ]]; then
                     shift $(( "$parse_result" - 1))
                 else
@@ -75,7 +114,6 @@ parse_options() {
                     fi
                 fi
         esac
-        shift
     done
     verbose COMMAND $(basename $0) ${parsed_args[@]}
 }

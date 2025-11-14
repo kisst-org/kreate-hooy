@@ -12,8 +12,27 @@ init_logging() {
 }
 
 init_bash_module_logging() {
+    add_option v verbose  ""    give more output
+    add_option s show-cmd ""    show the commands being executed
+    add_option q quiet    ""    show no output
+    add_option n dry-run  ""    do not execute the actual commands
     aliases[plan]="--quiet --dry-run --show-cmd"
 }
+
+parse_option_verbose()   { log_level+=10; }
+parse_option_quiet()     { log_level=$log_level_warn; }
+parse_option_show-cmd()  { log_commands=true; }
+parse_option_dry-run()   { dry_run=true; }
+parse_option_subdir()    { subdirs+=" $1"; extra_shift=1; }
+parse_option_to()        { to_dir="$1"; extra_shift=1; }
+parse_option_with()      { with_dir="$1"; extra_shift=1; }
+parse_option_action()    { action_list+=" $1"; extra_shift=1; }
+parse_option_message()   { git_commit_message="$1";   extra_shift=1; }
+parse_option_resource()  { kube_resource_list+=" $1"; extra_shift=1; }
+parse_option_replicas()  { kube_replicas="$1";  extra_shift=1; }
+parse_option_version()   { update_version="$1"; extra_shift=1; }
+
+
 
 parse_args_logging() {
     case "$1" in
