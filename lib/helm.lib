@@ -2,6 +2,7 @@
 init_bash_module_helm() {
     use_module render
     global_vars+=" helm_command helm_value_files helm_charts"
+    global_arrays+="helm_update_version_path helm_update_replicas_path"
 }
 
 add_optional_helm_values_file() {
@@ -16,7 +17,6 @@ add_optional_helm_values_file() {
 
 init_helm_vars() {
     local parent_dir=$(dirname "$karmah_dir")
-    add_optional_helm_values_file "$parent_dir/values*.yaml"
     add_optional_helm_values_file "$common_dir/values*.yaml"
     add_optional_helm_values_file "$karmah_dir/values*.yaml"
 }
@@ -54,4 +54,30 @@ apply_update_helm() {
             exit 1
         ;;
     esac
+}
+
+calc_resources() {
+    local result=${kube_resource_list:-all}
+    if [[ $result == all ]]; then
+        result=${all_resources}
+    fi
+    echo ${result//,/ }
+}
+
+update_version_helm() {
+    local res
+    local val_file=($karmah_dir/values*.yaml)
+    for res in $(calc_resources); do
+        verbose updating $res version to $update_version
+        verbose_cmd yq -i "${helm_update_version_path[$res]}=\"$update_version\"" $val_file
+    done
+}
+
+update_replicas_helm() {
+    local res
+    local val_file=($karmah_dir/values*.yaml)
+    for res in $(calc_resources); do
+        verbose updating $res replicas to $kube_replicas
+        verbose_cmd yq -i "${helm_update_replicas_path[$res]}=\"$kube_replicas\"" $val_file
+    done
 }

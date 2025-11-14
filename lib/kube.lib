@@ -3,12 +3,13 @@ init_bash_module_kube() {
     use_module render
     declare -Ag kube_config_map
     declare -Ag kube_context_map
+    #declare -g kube_resource_list
     add_action kube-get "get current manifests from cluster to --to <path> (default) deployed/manifests"
     add_action kube-apply "apply rendered manifests with cluster (kubectl apply)"
     add_action kube-diff "compare rendered manifests with cluster (kubectl diff)"
     add_action kube-tmp-scale "scale resource(s) without changing source or deployment files"
     add_action kube-restart "restart resource(s)"
-    global_vars+=" kube_cluster namespace kube_resource_list"
+    global_vars+=" kube_cluster namespace"
     global_arrays+=" kube_resource_alias kube_default_replicas"
 }
 
