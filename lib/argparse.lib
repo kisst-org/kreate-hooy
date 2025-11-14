@@ -81,27 +81,22 @@ parse_options() {
     log_level=$log_level_info
     while [[ $# > 0 ]]; do
         arg=$1
-        case $arg in
-            -h|--help|help) show_help; exit 0;;
-            -vv)            log_level+=20;;
-            #kube-get)       action_list+=" kube-get"; collect_unknown_args=true ;;
-            #kube-watch)     action_list+=" kube-watch"; collect_unknown_args=true ;;
-            *)
-                parse_result=0
-                parse_arg "$@";
-                if [[ "$parse_result" > 0 ]]; then
-                    shift $(( "$parse_result" - 1))
-                else
-                    if [[ -f ${arg} ]]; then karmah_paths+=" ${arg}"
-                    elif [[ -d ${arg} ]]; then karmah_paths+=" ${arg%%/}" # remove a trailing /
-                    elif $collect_unknown_args; then extra_args+=" $arg"
-                    else
-                        echo unknown argument ${arg}, should be an option, action or path
-                        show_short_help
-                        exit 1
-                    fi
-                fi
-        esac
+        parse_result=0
+        parse_arg "$@";
+        if [[ $arg = -vv ]]; then # TODO: parse multiple short options
+            log_level+=20;
+        elif [[ "$parse_result" > 0 ]]; then
+            shift $(( "$parse_result" - 1))
+        else
+            if [[ -f ${arg} ]]; then karmah_paths+=" ${arg}"
+            elif [[ -d ${arg} ]]; then karmah_paths+=" ${arg%%/}" # remove a trailing /
+            elif $collect_unknown_args; then extra_args+=" $arg"
+            else
+                echo unknown argument ${arg}, should be an option, action or path
+                show_short_help
+                exit 1
+            fi
+        fi
         shift
     done
     verbose COMMAND $(basename $0) ${parsed_args[@]}
