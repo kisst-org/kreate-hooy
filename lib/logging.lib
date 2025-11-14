@@ -11,6 +11,10 @@ init_logging() {
     parse_loglevel "$@"
 }
 
+init_bash_module_logging() {
+    aliases[plan]="--quiet --dry-run --show-cmd"
+}
+
 parse_args_logging() {
     case "$1" in
         -v|--verbose)   log_level+=10;                 parse_result=1;;
