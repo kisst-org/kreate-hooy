@@ -1,7 +1,8 @@
 
 init_bash_module_helm() {
     use_module render
-    global_vars+=" helm_command helm_value_files helm_charts"
+    add_action helm-install "run helm-install"
+    global_vars+=" helm_template_command helm_value_files helm_charts helm_install_command helm_atomic_wait"
     global_arrays+="helm_update_version_path helm_update_replicas_path"
 }
 
@@ -21,23 +22,50 @@ init_helm_vars() {
     add_optional_helm_values_file "$karmah_dir/values*.yaml"
 }
 
-render_helm() {
-    : ${helm_command:="helm template --namespace ${namespace}"} # TODO: --create-namespace does not create yaml for namespace
-    helm_release=$(basename $target) # this is probably not really used with helm template
+calc_helm_command() {
+    local chart=$1
+    shift
+    local cmd=$@
     local f
-    for f in ${helm_value_files[@]}; do helm_command+=" -f ${f}"; done
-    helm_command+=" $helm_release"
-    used_files="${helm_value_files[@]}"
+    local helm_release=$(basename $target)
+    for f in ${helm_value_files[@]}; do
+        cmd+=" -f ${f}";
+    done
+    cmd+=" $helm_release"
+    cmd+=" --namespace $namespace"
+    cmd+=" $chart"
+    echo $cmd
+}
+
+run_helm_forall_charts() {
+    run_cmd=$1
+    shift
+    local base_cmd=${@}
     for ch in ${helm_charts//,/ }; do
         local chart=${ch//@*}
         if [[ $ch == $chart ]]; then
+            local helm_cmd=$(calc_helm_command $chart ${base_cmd})
             used_files+=" $ch"
-            verbose_pipe split_into_files "$helm_command $ch"
+            $run_cmd "$helm_cmd"
         else
+            local helm_cmd=$(calc_helm_command $chart $base_cmd})
             local repo=${ch//*@}
-            verbose_pipe split_into_files "$helm_command --repo $repo $chart --version $chart_version"
+            $run_cmd "$helm_cmd --repo $repo --version $chart_version"
         fi
     done
+}
+
+run_action_helm-install() {
+    : ${helm_atomic_wait:=--wait --atomic --timeout 4m}
+    local default_cmd="helm upgrade --install ${helm_atomic_wait} --create-namespace"
+    run_helm_forall_charts "verbose_cmd" ${helm_install_command:-$default_cmd}
+}
+
+render_helm() {
+    local default_cmd="helm template"
+    local f
+    used_files+="${helm_value_files[@]}"
+    run_helm_forall_charts "verbose_pipe split_into_files" ${helm_template_command:-$default_cmd}
 }
 
 apply_update_helm() {
