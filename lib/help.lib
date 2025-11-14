@@ -38,9 +38,7 @@ echo Options:
 for h in "${option_help[@]}"; do printf "%s\n" "$h"; done
 
 echo Actions:
-for key in $(printf "%s\n" ${!action_help[@]} | sort); do
-  printf "  %-14s %s\n" $key "${action_help[$key]}"
-done
+for h in "${action_help[@]}"; do printf "%s\n" "$h"; done
 }
 
 

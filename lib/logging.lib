@@ -19,30 +19,23 @@ init_bash_module_logging() {
     aliases[plan]="--quiet --dry-run --show-cmd"
 }
 
+# TODO -vv
 parse_option_verbose()   { log_level+=10; }
 parse_option_quiet()     { log_level=$log_level_warn; }
 parse_option_show-cmd()  { log_commands=true; }
 parse_option_dry-run()   { dry_run=true; }
-parse_option_subdir()    { subdirs+=" $1"; extra_shift=1; }
-parse_option_to()        { to_dir="$1"; extra_shift=1; }
-parse_option_with()      { with_dir="$1"; extra_shift=1; }
-parse_option_action()    { action_list+=" $1"; extra_shift=1; }
-parse_option_message()   { git_commit_message="$1";   extra_shift=1; }
-parse_option_resource()  { kube_resource_list+=" $1"; extra_shift=1; }
-parse_option_replicas()  { kube_replicas="$1";  extra_shift=1; }
-parse_option_version()   { update_version="$1"; extra_shift=1; }
+
+parse_option_subdir()    { subdirs+=" $2"; parse_result=2; }
+parse_option_to()        { to_dir="$2"; parse_result=2; }
+parse_option_with()      { with_dir="$2"; parse_result=2; }
+parse_option_action()    { action_list+=" $2"; parse_result=2; }
+parse_option_message()   { git_commit_message="$2";   parse_result=2; }
+parse_option_resource()  { kube_resource_list+=" $2"; parse_result=2; }
+parse_option_replicas()  { kube_replicas="$2";  parse_result=2; }
+parse_option_version()   { update_version="$2"; parse_result=2; }
 
 
 
-parse_args_logging() {
-    case "$1" in
-        -v|--verbose)   log_level+=10;                 parse_result=1;;
-        -vv)            log_level+=20;                 parse_result=1;;
-        -q|--quiet)     log_level=$log_level_warn;     parse_result=1;;
-        -C|--show-cmd)  log_commands=true;             parse_result=1;;
-        -n|--dry-run)   dry_run=true;                  parse_result=1;;
-    esac
-}
 
 log_is_error()   { (( ${log_level} >= ${log_level_error} )) }
 log_is_warn()    { (( ${log_level} >= ${log_level_warn} )) }
@@ -85,6 +78,6 @@ verbose_pipe() {
 
 parse_loglevel() {
     for arg in "$@"; do
-        parse_args_logging "${arg}" >/dev/null
+        if [[ $arg == -v ]]; then log_level+=10; fi
     done
 }
