@@ -9,6 +9,7 @@ init_bash_module_kube() {
     add_action kube-diff "compare rendered manifests with cluster (kubectl diff)"
     add_action kube-tmp-scale "scale resource(s) without changing source or deployment files"
     add_action kube-restart "restart resource(s)"
+    add_action kubectl --collect "generic kubectl in the right cluster and namespace of all targets"
     add_option R replicas nr  "specify number of replicas"
     global_vars+=" kube_cluster namespace"
     global_arrays+=" kube_resource_alias kube_default_replicas"
@@ -25,7 +26,7 @@ kubectl_options() {
     if [[ $cfg != default ]]; then
         opt="--kube_config_map $cfg " # extra space at end
     fi
-    opt+="--context ${kube_context_map[$cl]}"
+    opt+="--context ${kube_context_map[$cl]} -n $namespace"
     echo $opt
 }
 
@@ -45,6 +46,12 @@ run_action_kube-apply() {
     info kube apply $output_dir
     verbose_cmd kubectl apply $(kubectl_options) -f $output_dir
 }
+
+run_action_kubectl() {
+    info kubectl $output_dir
+    verbose_cmd kubectl $(kubectl_options) $extra_args
+}
+
 
 split_kubectl_output_into_files() {
     yq  '.items.[]' -s \"$output_dir/\"'+ (.kind | downcase) + "_" + .metadata.name + ".yaml"'
