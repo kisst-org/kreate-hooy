@@ -25,7 +25,7 @@ run_command_forall() {
 }
 
 init_karmah_type_basic() {
-    karmah_vars+=""
+    verbose using empty karmah_type initializer
 }
 
 run_karmah_file() {
