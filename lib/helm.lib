@@ -56,18 +56,10 @@ apply_update_helm() {
     esac
 }
 
-calc_resources() {
-    local result=${kube_resource_list:-all}
-    if [[ $result == all ]]; then
-        result=${all_resources}
-    fi
-    echo ${result//,/ }
-}
-
 update_version_helm() {
     local res
     local val_file=($karmah_dir/values*.yaml)
-    for res in $(calc_resources); do
+    for res in $(calc_resource_names); do
         verbose updating $res version to $update_version
         verbose_cmd yq -i "${helm_update_version_path[$res]}=\"$update_version\"" $val_file
     done
@@ -76,8 +68,12 @@ update_version_helm() {
 update_replicas_helm() {
     local res
     local val_file=($karmah_dir/values*.yaml)
-    for res in $(calc_resources); do
-        verbose updating $res replicas to $kube_replicas
-        verbose_cmd yq -i "${helm_update_replicas_path[$res]}=\"$kube_replicas\"" $val_file
+    for res in $(calc_resource_names); do
+        local repl=${kube_replicas:-default}
+        if [[ $repl == default ]]; then
+            repl=${kube_default_replicas[$res]}
+        fi
+        verbose updating $res replicas to $repl
+        verbose_cmd yq -i "${helm_update_replicas_path[$res]}=\"$repl\"" $val_file
     done
 }

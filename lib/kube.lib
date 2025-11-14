@@ -81,9 +81,17 @@ run_action_kube-restart() {
 }
 run_action_kube-tmp-scale() {
     local res
-    for res in ${kube_resource_list//,/ }; do
+    for res in $(calc_resource_names); do
         verbose_cmd kubectl $(kubectl_options) -n $namespace scale $res --replicas $(calc_kube_replicas $res)
     done
+}
+
+calc_resource_names() {
+    local result=${kube_resource_list:-all}
+    if [[ $result == all ]]; then
+        result=${all_resources}
+    fi
+    echo ${result//,/ }
 }
 
 calc_kube_replicas() {

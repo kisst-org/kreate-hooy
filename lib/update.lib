@@ -2,6 +2,8 @@
 init_bash_module_render() {
     add_action update "update source files with expressions from --update"
     global_vars+=" update_version_function update_replicas_function"
+    aliases[stop]="kube-tmp-scale --replicas 0"
+    aliases[start]="kube-tmp-scale --replicas default"
 }
 
 run_action_update() {
