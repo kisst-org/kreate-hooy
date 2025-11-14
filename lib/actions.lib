@@ -63,7 +63,7 @@ run_action_deploy() {
 }
 
 run_actions() {
-    for action in ${1//,/ }; do
+    for action in ${@//,/ }; do
         verbose running $action for ${target}
         run_action_$action;
     done
