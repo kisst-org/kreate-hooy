@@ -32,7 +32,7 @@ add_option() {
     option_help+=("$(printf "  %-20s %s\n" "$name" "$help")")
 }
 
-parse_set_command() { command=$1; }
+parse_set_command() { command=run_command_$1; }
 add_command() {
     local name=$1
     shift 1
