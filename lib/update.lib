@@ -1,0 +1,16 @@
+
+init_bash_module_render() {
+    add_action update "update source files with expressions from --update"
+}
+
+run_action_update() {
+    if [[ ${#updates[@]} == 0 ]]; then
+        verbose skipping updates
+        return 0
+    fi
+    info updating ${target}
+    for up in ${updates[@]}; do
+        verbose applying update "$up"
+        update_karmah_type_$karmah_type "$up"
+    done
+}

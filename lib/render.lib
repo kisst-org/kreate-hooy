@@ -1,23 +1,9 @@
 
 init_bash_module_render() {
-    add_action update "update source files with expressions from --update"
     add_action render "render manifests to --to <path> (default tmp/manifests)"
     add_action compare "render manifests to --to <path> (default tmp/manifests) and then compare with --with path (default deployed/manifests)"
-    add_action deploy "render to deployed/manifests and optionally deploy to kubernetes"
     global_vars+=" renderer output_dir"
     declare -g to_dir
-}
-
-run_action_update() {
-    if [[ ${#updates[@]} == 0 ]]; then
-        verbose skipping updates
-        return 0
-    fi
-    info updating ${target}
-    for up in ${updates[@]}; do
-        verbose applying update "$up"
-        update_karmah_type_$karmah_type "$up"
-    done
 }
 
 run_action_render() {
@@ -30,35 +16,12 @@ run_action_render() {
     done
  }
 
-
-render_post-render() { $post_render_func; }
-
 run_action_compare() {
     run_action_render
-
     olddir=${output_dir}
     local newdir=${with_dir:-deployed/manifests}/${target}
     info comparing ${target}: ${output_dir} with ${newdir}
-
-    if ${clean_before_compare:-true}; then
-        verbose_cmd mkdir -p tmp/$(dirname $newdir)
-        verbose_cmd cp -r $newdir tmp/$(dirname $newdir)
-        newdir=tmp/${newdir}
-        pre_diff_cleanup $newdir $olddir
-    fi
     verbose_cmd diff -r $newdir $olddir || true
-}
-
-basic_cleanup () {
-    verbose removing comments
-    sed -i -e '/^ *#/d' $1/*.yaml $2/*.yaml
-    verbose removing quotes around values starting or ennding with text
-    sed -i -e 's/: "\([a-zA-Z].*\)"$/: \1/' $1/*.yaml $2/*.yaml
-    sed -i -e 's/: "\([a-zA-Z0-9].*[a-zA-Z]\)"$/: \1/' $1/*.yaml $2/*.yaml
-}
-
-pre_diff_cleanup() {
-    basic_cleanup $1 $2
 }
 
 split_into_files() {

@@ -2,6 +2,7 @@
 
 init_bash_module_actions() {
     add_command "forall" "run actions for all targets"
+    add_action deploy "render to deployed/manifests and optionally deploy to kubernetes"
     command=run_command_forall
     declare -g global_vars="karmah_type target"
     declare -g global_arrays=""
