@@ -64,7 +64,7 @@ run_action_helm-install() {
 render_helm() {
     local default_cmd="helm template"
     local f
-    used_files+="${helm_value_files[@]}"
+    used_files+=" ${helm_value_files[@]}"
     run_helm_forall_charts "verbose_pipe split_into_files" ${helm_template_command:-$default_cmd}
 }
 

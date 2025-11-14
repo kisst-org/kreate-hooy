@@ -53,8 +53,8 @@ parse_options() {
             -r|--resource)  kube_resource_list+=" $2"; shift;;
             -R|--replicas)  kube_replicas="$2";  shift;;
             -V|--version)   update_version="$2"; shift;;
-            kube-get)       action_list+="kube-get"; collect_unknown_args=true ;;
-            kube-watch)     action_list+="kube-watch"; collect_unknown_args=true ;;
+            kube-get)       action_list+=" kube-get"; collect_unknown_args=true ;;
+            kube-watch)     action_list+=" kube-watch"; collect_unknown_args=true ;;
             *)
                 parse_result=0
                 parse_args_logging "$@"
@@ -64,7 +64,7 @@ parse_options() {
                     if [[ "${command_help["$arg"]:-none}" != none  ]]; then
                         command="run_command_$arg"
                     elif [[ "${action_help["$arg"]:-none}" != none  ]]; then
-                        action_list+="$arg"
+                        action_list+=" $arg"
                     elif [[ -f ${arg} ]]; then karmah_paths+=" ${arg}"
                     elif [[ -d ${arg} ]]; then karmah_paths+=" ${arg%%/}" # remove a trailing /
                     elif $collect_unknown_args; then extra_args+=" $arg"
