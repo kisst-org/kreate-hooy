@@ -1,9 +1,9 @@
-# run actions for all app/envs
+# run actions for all targets
 
 init_bash_module_actions() {
-    add_command "forall" "run actions for all paths"
+    add_command "forall" "run actions for all targets"
     command=run_command_forall
-    declare -g global_vars="karmah_type appname env renderer output_dir"
+    declare -g global_vars="karmah_type target"
     declare -g global_arrays=""
 }
 
@@ -46,7 +46,7 @@ run_karmah_file() {
         fi
         source ${karmah_file}
         init_karmah_type_${karmah_type:-basic}
-        output_dir="${to_dir:-tmp/manifests}/${env}/${appname}"
+        output_dir="${to_dir:-tmp/manifests}/${target}"
         run_actions ${action_list:-render}
     else
         info skipping $karmah_file
@@ -54,7 +54,7 @@ run_karmah_file() {
 }
 
 run_action_deploy() {
-    output_dir="${to_dir:-deployed/manifests}/${env}/${appname}"
+    output_dir="${to_dir:-deployed/manifests}/${target}"
     local actions=${deploy_actions:-render,git-diff,ask,git-commit}
     info deploying ${output_dir} with actions: ${actions}
     # TODO: output_dir is different for actions before this action
@@ -63,7 +63,7 @@ run_action_deploy() {
 
 run_actions() {
     for action in ${1//,/ }; do
-        verbose running $action with ${output_dir} for ${env} ${appname}
+        verbose running $action for ${target}
         run_action_$action;
     done
 }

@@ -4,6 +4,7 @@ init_bash_module_render() {
     add_action render "render manifests to --to <path> (default tmp/manifests)"
     add_action compare "render manifests to --to <path> (default tmp/manifests) and then compare with --with path (default deployed/manifests)"
     add_action deploy "render to deployed/manifests and optionally deploy to kubernetes"
+    global_vars+=" renderer output_dir"
     declare -g to_dir
 }
 
@@ -12,7 +13,7 @@ run_action_update() {
         verbose skipping updates
         return 0
     fi
-    info updating ${env} ${appname}
+    info updating ${target}
     for up in ${updates[@]}; do
         verbose applying update "$up"
         update_karmah_type_$karmah_type "$up"
@@ -21,7 +22,7 @@ run_action_update() {
 
 run_action_render() {
     run_action_update
-    info rendering ${env} ${appname} to ${output_dir} with ${renderer}
+    info rendering ${target} with ${renderer} to ${output_dir}
     verbose_cmd rm -rf ${output_dir}
     verbose_cmd mkdir -p ${output_dir}
     for r in ${renderer//,/ }; do
@@ -36,8 +37,8 @@ run_action_compare() {
     run_action_render
 
     olddir=${output_dir}
-    local newdir=${with_dir:-deployed/manifests}/${env}/${appname}
-    info comparing ${env} ${appname}: ${output_dir} with ${newdir}
+    local newdir=${with_dir:-deployed/manifests}/${target}
+    info comparing ${target}: ${output_dir} with ${newdir}
 
     if ${clean_before_compare:-true}; then
         verbose_cmd mkdir -p tmp/$(dirname $newdir)

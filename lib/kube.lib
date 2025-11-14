@@ -1,18 +1,14 @@
 
 init_bash_module_kube() {
     use_module render
-    declare -g kube_cluster
     declare -Ag kubeconfig
     declare -Ag kubecontext
-    declare -Ag kube_resource_alias
-    declare -g kube_resource_list=""
-    declare -gA kube_default_replicas
     add_action kube-get "get current manifests from cluster to --to <path> (default) deployed/manifests"
     add_action kube-apply "apply rendered manifests with cluster (kubectl apply)"
     add_action kube-diff "compare rendered manifests with cluster (kubectl diff)"
     add_action kube-tmp-scale "scale resource(s) without changing source or deployment files"
     add_action kube-restart "restart resource(s)"
-    global_vars+=" kube_cluster namespace kube_resource_alias kube_default_replicas  "
+    global_vars+=" kube_cluster namespace kube_resource_list"
     global_arrays+=" kube_resource_alias kube_default_replicas"
 }
 
@@ -31,7 +27,7 @@ kubectl_options() {
 filter-kube-diff-output() { grep -E '^[+-] |^---'; }
 run_action_kube-diff() {
     run_action_render
-    info kube-diff ${env} ${appname} to ${output_dir}
+    info kube-diff ${target} to ${output_dir}
     if $(log_is_verbose); then
         verbose_cmd kubectl diff $(kubectl_options) -f $output_dir || true
     else
@@ -50,10 +46,10 @@ split_kubectl_output_into_files() {
 }
 
 run_action_kube-get-manifests() {
-    info kube get manifests  ${env} ${appname} to ${output_dir}
+    info kube get manifests  ${target} to ${output_dir}
     verbose_cmd rm -rf ${output_dir}
     verbose_cmd mkdir -p ${output_dir}
-    verbose_pipe split_kubectl_output_into_files kubectl ${kubectl_options[$env]} -n "${namespace}" get deploy,svc,sts,cm,ingress -o yaml
+    verbose_pipe split_kubectl_output_into_files kubectl ${kubectl_options[$kube_cluster]} -n "${namespace}" get deploy,svc,sts,cm,ingress -o yaml
     ignore_files=configmap_kube-root-ca.crt.yaml
     ignore_files+=" deployment_ingress-nginx-controller.yaml"
     ignore_files+=" service_ingress-nginx-controller-admission.yaml"

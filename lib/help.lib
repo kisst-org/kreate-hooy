@@ -6,7 +6,21 @@ init_bash_module_help() {
 
 show_help() {
 cat <<EOF
-$(basename ${script_name}) [ option | command | action | path ]...
+karmah: Kubernetes Application Rendered MAnifest Helper (version $karmah_version)
+
+Description:
+  karmah helps to enforce the rendered manifest pattern for targets
+  Each target is defined in a karmah file, which defines various options, like:
+  - rendering method to use (e.g. helm, kustomize)
+  - rendering parameters, e.g. helm charts and value file
+  - deployment method, e.g helm intstall, kapp deploy, kubectl apply
+  - kubernetes info, e.g. kubeconfig, context and namespace
+  - helper info, e.g. how to inspect, scale and change versions
+
+Usage:
+  karmah [ option | command | action | target ]...
+    Options, commands, actions and paths can be mixed freely
+
 
 Options:
   -h|--help|help      show this help and exit
@@ -32,13 +46,12 @@ for key in $(printf "%s\n" ${!action_help[@]} | sort); do
   printf "  %-14s %s\n" $key "${action_help[$key]}"
 done
 cat <<EOF
-Paths:
+Targets:
   Each path defines an application definition, that will be sourced,
   This can either be a file, or a directory that contains exactly 1 file with a name '*.karmah'.
   When one or more --subdirs are specfied, these will be append to the path
 
 Note:
-  Options, commands, actions and paths can be mixed freely
   If multiple commands are given, only last command will be used
 EOF
 }

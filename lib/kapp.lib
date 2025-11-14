@@ -32,7 +32,7 @@ kapp_options() {
     if [[ $cfg != default ]]; then
         opt="--kubeconfig $cfg " # extra space at end
     fi
-    opt+="--kubeconfig-context ${kubecontext[$cl]} -n ${namespace} -a ${appname} -f ${output_dir}"
+    opt+="--kubeconfig-context ${kubecontext[$cl]} -n ${namespace} -a $(basename $target) -f ${output_dir}"
     echo $opt
 }
 
