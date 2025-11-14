@@ -6,8 +6,13 @@ init_bash_module_git() {
     add_action git-diff "shows the changes to source and rendered manifests with git"
     add_action git-add "adds the changes to source and rendered manifests to git, for committing"
     add_action git-commit "commits the changes to source and rendered manifests to git"
+
+    add_option m message  msg   set message to us with git commit
     global_vars+=" used_files"  # TODO: git_commit_message
 }
+
+parse_option_message()   { git_commit_message="$2";   parse_result=2; }
+
 
 run_action_ask() {
     local answer

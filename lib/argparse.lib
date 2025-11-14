@@ -15,16 +15,6 @@ init_argparse() {
     declare -g command
 }
 
-init_bash_module_argparse() {
-    use_module logging
-    add_option s subdir   dir   "add subdir to list of subdirs (can be comma separated list)"
-    add_option t to       path  "other path to render to (default is tmp/manifests)"
-    add_option w with     path  used for comparison between two manifest trees
-    add_option u update   expr  update source files before rendering
-    add_option a action   act   add action to list of actions to perform
-    add_option m message  msg   set message to us with git commit
-}
-
 add_option() {
     local short=$1
     local name=$2
@@ -93,8 +83,7 @@ parse_options() {
         arg=$1
         case $arg in
             -h|--help|help) show_help; exit 0;;
-            --debug)        set -x;;
-            -vv)            log_level+=10;;
+            -vv)            log_level+=20;;
             #kube-get)       action_list+=" kube-get"; collect_unknown_args=true ;;
             #kube-watch)     action_list+=" kube-watch"; collect_unknown_args=true ;;
             *)

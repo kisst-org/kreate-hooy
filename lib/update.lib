@@ -1,12 +1,17 @@
 
-init_bash_module_render() {
+init_bash_module_update() {
     add_action update "update source files with expressions from --update"
+    add_option V version ver  "specify version (tag) to use for update or scale"
+
     global_vars+=" update_version_function update_replicas_function"
     aliases[tmp-stop]="--action kube-tmp-scale --replicas 0"
     aliases[tmp-start]="--action kube-tmp-scale --replicas default"
     aliases[stop]="--action deploy --replicas 0"
     aliases[start]="--action deploy --replicas default"
 }
+
+parse_option_version()   { update_version="$2"; parse_result=2; }
+
 
 run_action_update() {
     local any_updates=false

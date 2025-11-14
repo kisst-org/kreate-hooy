@@ -26,6 +26,7 @@ init_all_modules() {
     declare -g modules=""
     declare -gA module_needs_init=()
     declare -gA module_files=()
+    use_module logging
     modules=$(set | grep '^init_bash_module_'| sed -e 's/init_bash_module_//' -e 's/ *()//')
     for m in $modules; do
         use_module $m
